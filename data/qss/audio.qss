@@ -1,0 +1,50 @@
+QComboBox {
+    /* 边框宽度,线条样式,颜色 */
+    border:1px solid red;
+
+    /* 倒角 */
+    border-radius:3px;
+
+    /* 内边框 */
+    padding:1px 18px 1px 3px;
+
+    width:100px;
+
+    height: 34px;
+}
+
+
+/*音量描述label*/
+QLabel{
+    color: black;
+}
+
+/*滑动条slider*/
+QSlider{
+    width:178px;
+    height:20px;
+}
+QSlider::groove:horizontal {
+    border: 0px solid #bbb;
+
+}
+QSlider::sub-page:horizontal {
+    background: #2e8ad2;
+    border-radius: 2px;
+    margin-top:8px;
+    margin-bottom:9px;
+}
+QSlider::add-page:horizontal {
+    background:  rgba(52,70,80,90%);
+    border: 0px solid #777;
+    border-radius: 2px;
+    margin-top:8px;
+    margin-bottom:9px;
+}
+QSlider::handle:horizontal {
+    width: 20px;
+    height: 20px;
+    background: rgb(0, 160, 230);
+    border-radius:10px;
+}
+
