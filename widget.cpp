@@ -13,6 +13,7 @@ extern "C" {
 #include "utils.h"
 #include <QHBoxLayout>
 #include <QScrollArea>
+#include <QHeaderView>
 #include <QStringList>
 #define MATE_DESKTOP_USE_UNSTABLE_API
 #define VERSION "1.12.1"
@@ -25,17 +26,17 @@ extern "C" {
 
 guint appnum = 0;
 typedef enum {
-        BALANCE_TYPE_RL,
-        BALANCE_TYPE_FR,
-        BALANCE_TYPE_LFE,
+    BALANCE_TYPE_RL,
+    BALANCE_TYPE_FR,
+    BALANCE_TYPE_LFE,
 } GvcBalanceType;
 
 enum {
-        SOUND_TYPE_UNSET,
-        SOUND_TYPE_OFF,
-        SOUND_TYPE_DEFAULT_FROM_THEME,
-        SOUND_TYPE_BUILTIN,
-        SOUND_TYPE_CUSTOM
+    SOUND_TYPE_UNSET,
+    SOUND_TYPE_OFF,
+    SOUND_TYPE_DEFAULT_FROM_THEME,
+    SOUND_TYPE_BUILTIN,
+    SOUND_TYPE_CUSTOM
 };
 
 Widget::Widget(QWidget *parent) :
@@ -54,6 +55,8 @@ Widget::Widget(QWidget *parent) :
     device_name_list = new QStringList;
     output_stream_list = new QStringList;
     input_stream_list = new QStringList;
+    app_volume_list = new QStringList;
+    stream_control_list = new QStringList;
     //应用音量显示标签
     app_display_label = new QLabel(ui->appVolumeTableView);
     app_display_label->setText(tr("No application is currently playing or recording audio"));
@@ -61,6 +64,7 @@ Widget::Widget(QWidget *parent) :
     //创建ItemModel 添加应用音量
     standItemModel = new QStandardItemModel();
     standItemModel->setColumnCount(4);
+
     //创建context
     context = mate_mixer_context_new();
 //    gboolean ok =  mate_mixer_context_set_backend_type(context,MATE_MIXER_BACKEND_ALSA);
@@ -97,7 +101,13 @@ Widget::Widget(QWidget *parent) :
                      G_CALLBACK (on_context_state_notify),
                      this);
 
-
+    //隐藏QTableView表格和网格线
+    ui->appVolumeTableView->setShowGrid(false);
+    ui->appVolumeTableView->horizontalHeader()->setVisible(false);// 水平不可见
+    ui->appVolumeTableView->verticalHeader()->setVisible(false);// 垂直不可见
+    //设置QTableView行高
+    ui->appVolumeTableView->verticalHeader()->setDefaultSectionSize(40);
+    ui->appVolumeTableView->horizontalHeader()->setFixedWidth(180);
     //设置滑动条的最大值为100
     ui->ipVolumeSlider->setMaximum(100);
     ui->opVolumeSlider->setMaximum(100);
@@ -105,6 +115,8 @@ Widget::Widget(QWidget *parent) :
     ui->opBalanceSlider->setMinimum(-100);
     ui->opBalanceSlider->setSingleStep(100);
     ui->inputLevelSlider->setMaximum(100);
+
+    ui->appVolumeTableView->setColumnWidth(2,180);
 
     //设置声音主题
     //获取声音gsettings值
@@ -125,6 +137,7 @@ Widget::Widget(QWidget *parent) :
     connect(this->ui->lagoutCombobox ,SIGNAL(currentIndexChanged(int)),this,SLOT(combox_index_changed_slot(int)));
     connect(this->ui->soundThemeCombobox,SIGNAL(currentIndexChanged(int)),this,SLOT(theme_combox_index_changed_slot(int)));
 
+//    setWindowFlag(Qt::ToolTip);
 }
 
 /*
@@ -134,15 +147,14 @@ void Widget::on_context_state_notify (MateMixerContext *context,GParamSpec *pspe
 {
     MateMixerState state = mate_mixer_context_get_state (context);
     list_device(w,context);
-        if (state == MATE_MIXER_STATE_READY) {
+    if (state == MATE_MIXER_STATE_READY) {
 
-            update_icon_output(w);
-            update_icon_input(w);
-
+        update_icon_output(w);
+        update_icon_input(w);
 //                remove_warning_dialog ();
 //                context_ready (context, app);
-        }
-        else if (state == MATE_MIXER_STATE_FAILED) {
+    }
+    else if (state == MATE_MIXER_STATE_FAILED) {
 
 //                GtkWidget *dialog;
 
@@ -164,33 +176,12 @@ void Widget::on_context_state_notify (MateMixerContext *context,GParamSpec *pspe
 //                                  GINT_TO_POINTER (TRUE));
 
 //                gtk_widget_show (dialog);
-        }
-        qDebug() << "设备列表为" << w->device_name_list->at(0) << w->device_name_list->size() << "stream size" << w->output_stream_list->at(0);
-        //点击输出设备
-//        connect(w->ui->outputDeviceCombobox,SIGNAL(currentIndexChanged(int)),w,SLOT(output_device_combox_index_changed_slot(int)))
-
-        connect(w->ui->outputDeviceCombobox,&QComboBox::currentTextChanged,[=](const QString &text){
-            int index = w->ui->outputDeviceCombobox->currentIndex();
-            qDebug() << "输出组合框index改变" << text << index;
-            MateMixerBackendFlags flags;
-            QString name = w->output_stream_list->at(index);
-            //QString转换为const char *
-            const char *device_name = name.toLocal8Bit();
-
-            MateMixerStream *stream = mate_mixer_context_get_stream(context,device_name);
-
-            qDebug() << "输出设备切换" << device_name << name << mate_mixer_stream_get_name(stream);
-            flags = mate_mixer_context_get_backend_flags (context);
-
-           if (flags & MATE_MIXER_BACKEND_CAN_SET_DEFAULT_OUTPUT_STREAM) {
-               qDebug() << "default output";
-               mate_mixer_context_set_default_output_stream (context, stream);
-           }
-           else
-               qDebug() << 111111111;
-        });
-        //点击输入设备
-        connect(w->ui->inputDeviceCombobox,SIGNAL(currentIndexChanged(int)),w,SLOT(input_device_combox_index_changed_slot(int)));
+    }
+    qDebug() << "设备列表为" << w->device_name_list->at(0) << w->device_name_list->size() << "stream size" << w->output_stream_list->at(0);
+    //点击输出设备
+    connect(w->ui->outputDeviceCombobox,SIGNAL(currentIndexChanged(int)),w,SLOT(output_device_combox_index_changed_slot(int)));
+    //点击输入设备
+    connect(w->ui->inputDeviceCombobox,SIGNAL(currentIndexChanged(int)),w,SLOT(input_device_combox_index_changed_slot(int)));
 }
 
 /*
@@ -208,8 +199,7 @@ void Widget::on_context_stored_control_added (MateMixerContext *context,const gc
     media_role = mate_mixer_stream_control_get_media_role (control);
 
     if (media_role == MATE_MIXER_STREAM_CONTROL_MEDIA_ROLE_EVENT)
-        qDebug() << "role";
-//                bar_set_stream_control (dialog, dialog->priv->effects_bar, control);
+        bar_set_stream_control (w, control);
 }
 
 
@@ -338,7 +328,7 @@ void Widget::add_stream (Widget *w, MateMixerStream *stream,MateMixerContext *co
 //        MateMixerDeviceSwitch *ipSwitch = mate_mixer_device_get_switch(ipDevice,"profile");
 
         if (stream == input) {
-//                        bar_set_stream (dialog, dialog->priv->input_bar, stream);
+            bar_set_stream (w, stream);
 
 //                        update_input_settings (dialog);
             is_default = TRUE;
@@ -356,7 +346,7 @@ void Widget::add_stream (Widget *w, MateMixerStream *stream,MateMixerContext *co
         if (stream == output) {
             update_output_settings(w,control);
             qDebug() << "stream is default";
-//                        bar_set_stream (dialog, dialog->priv->output_bar, stream);
+            bar_set_stream (w, stream);
 
             is_default = TRUE;
         }
@@ -456,11 +446,14 @@ void Widget::add_application_control (Widget *w, MateMixerStreamControl *control
 
 //    for (app_count=0;app_count<appnum;app_count++) {
         w->standItemModel->setRowCount(appnum);
-        w->ui->appVolumeTableView->setColumnWidth(1,178);
-        w->ui->appVolumeTableView->setRowHeight(app_count,40);
-        w->ui->appVolumeTableView->setModel(w->standItemModel);
-        add_app_to_tableview(w,appnum,w->standItemModel,app_name,app_icon_name,control);
 
+        w->ui->appVolumeTableView->setModel(w->standItemModel);
+        //设置QTableView每行的宽度
+        w->ui->appVolumeTableView->setColumnWidth(0,100);
+        w->ui->appVolumeTableView->setColumnWidth(1,40);
+        w->ui->appVolumeTableView->setColumnWidth(2,180);
+        w->ui->appVolumeTableView->setColumnWidth(3,40);
+        add_app_to_tableview(w,appnum,w->standItemModel,app_name,app_icon_name,control);
 
 //    }
     w->ui->appVolumeTableView->show();
@@ -506,7 +499,7 @@ void Widget::add_application_control (Widget *w, MateMixerStreamControl *control
 //                            bar,
 //                            FALSE, FALSE, 12);
 
-//        bar_set_stream_control (dialog, bar, control);
+        bar_set_stream_control (w, control);
 
 //        gtk_widget_hide (dialog->priv->no_apps_label);
 //        gtk_widget_show (bar);
@@ -514,17 +507,18 @@ void Widget::add_application_control (Widget *w, MateMixerStreamControl *control
 
 void Widget::on_stream_control_added (MateMixerStream *stream,const gchar *name,Widget *w)
 {
-        MateMixerStreamControl    *control;
-        MateMixerStreamControlRole role;
+    MateMixerStreamControl    *control;
+    MateMixerStreamControlRole role;
+    qDebug() << "add stream control" << name;
+    w->stream_control_list->append(name);
+    control = mate_mixer_stream_get_control (stream, name);
+    if G_UNLIKELY (control == nullptr)
+        return;
 
-        control = mate_mixer_stream_get_control (stream, name);
-        if G_UNLIKELY (control == nullptr)
-            return;
-
-        role = mate_mixer_stream_control_get_role (control);
-        if (role == MATE_MIXER_STREAM_CONTROL_ROLE_APPLICATION) {
-            add_application_control (w, control);
-        }
+    role = mate_mixer_stream_control_get_role (control);
+    if (role == MATE_MIXER_STREAM_CONTROL_ROLE_APPLICATION) {
+        add_application_control (w, control);
+    }
 }
 
 /*
@@ -532,34 +526,35 @@ void Widget::on_stream_control_added (MateMixerStream *stream,const gchar *name,
 */
 void Widget::on_stream_control_removed (MateMixerStream *stream,const gchar *name,Widget *w)
 {
-        MateMixerStreamControl *control;
-
+    MateMixerStreamControl *control;
+    qDebug() << "stream control remove" << name;
+    w->stream_control_list->append(name);
 //        control = gvc_channel_bar_get_control (GVC_CHANNEL_BAR (dialog->priv->input_bar));
-        if (control != nullptr) {
-            const gchar *input_name = mate_mixer_stream_control_get_name (control);
+//    if (control != nullptr) {
+//        const gchar *input_name = mate_mixer_stream_control_get_name (control);
 
-            if (strcmp (name, input_name) == 0) {
-                    // XXX probably can't even happen, but handle it somehow
-                return;
-            }
-        }
+//        if (strcmp (name, input_name) == 0) {
+//                // XXX probably can't even happen, but handle it somehow
+//            return;
+//        }
+//    }
 
 //        control = gvc_channel_bar_get_control (GVC_CHANNEL_BAR (dialog->priv->output_bar));
-        if (control != nullptr) {
-            const gchar *input_name = mate_mixer_stream_control_get_name (control);
+//    if (control != nullptr) {
+//        const gchar *input_name = mate_mixer_stream_control_get_name (control);
 
-            if (strcmp (name, input_name) == 0) {
-                    // XXX probably can't even happen, but handle it somehow
-                return;
-            }
-        }
+//        if (strcmp (name, input_name) == 0) {
+//                // XXX probably can't even happen, but handle it somehow
+//            return;
+//        }
+//    }
 
-        /* No way to be sure that it is an application control, but we don't have
-         * any other than application bars that could match the name */
-        remove_application_control (w, name);
+    /* No way to be sure that it is an application control, but we don't have
+     * any other than application bars that could match the name */
+    remove_application_control (w, name);
 }
 
-void Widget::remove_application_control (Widget *w, const gchar *name)
+void Widget::remove_application_control (Widget *w,const gchar *name)
 {
 //        GtkWidget *bar;
 
@@ -568,13 +563,22 @@ void Widget::remove_application_control (Widget *w, const gchar *name)
 //                return;
 
     g_debug ("Removing application stream %s", name);
-    qDebug() << "移除应用" << name;
         /* We could call bar_set_stream_control here, but that would pointlessly
          * invalidate the channel bar, so just remove it ourselves */
 //        g_hash_table_remove (dialog->priv->bars, name);
 
 //        gtk_container_remove (GTK_CONTAINER (gtk_widget_get_parent (bar)), bar);
-    w->standItemModel->removeRows(0,1);
+    int index = w->app_volume_list->indexOf(name);
+    int i = w->stream_control_list->indexOf(name);
+
+    w->stream_control_list->removeOne(name);
+
+//    MateMixerStream *s =  mate_mixer_stream_control_get_stream(control);
+//    MateMixerAppInfo *info = mate_mixer_stream_control_get_app_info(control);
+//    const gchar *app_name = mate_mixer_app_info_get_name(info);
+    qDebug() << "移除stream control" << i << "移除应用app_name  name"  << name << index << w->stream_control_list->size() ;
+//    w->app_volume_list->removeAt(index);
+//    w->standItemModel->removeRows(0,i+1);
     if (appnum <= 0) {
         g_warn_if_reached ();
         appnum = 1;
@@ -603,7 +607,7 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
 //        volume = normal / 100.0 * 40.0 +(volume - normal / 100.0 * 80.0) * 3.0;
 //    else
 //        volume = volume - normal / 100.0 * 40.0;
-    double display_volume = 100 * volume / normal;
+    int display_volume = 100 * volume / normal;
 
 //    qDebug() <<"转换后" << volume << normal << display_volume << app_name << endl;
 
@@ -614,22 +618,31 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
     XdgDesktopFile xdg;
     xdg.load(iconName);
     QIcon i=xdg.icon();
+//    GError **error = nullptr;
+//    GKeyFileFlags flags = G_KEY_FILE_NONE;
+//    GKeyFile *keyflie = g_key_file_new();
+//    QByteArray fpbyte = iconName.toLocal8Bit();
+//    char *filepath = "/usr/share/applications";//fpbyte.data();
+//    g_key_file_load_from_file(keyflie,iconName.toLocal8Bit(),flags,error);
+//    char *icon = g_key_file_get_locale_string(keyflie,"Desktop Entry","Icon",nullptr,nullptr);
+//    qDebug() << "+++++++++++++ icon" << icon << "file path"<< filepath;
+    w->app_volume_list->append(app_icon_name);
 
     w->appLabel = new QLabel(w->ui->appVolumeTableView);
     w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
     w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
     w->appSlider = new QSlider(Qt::Horizontal,w->ui->appVolumeTableView);
-//    standItemModel->removeRows(0,1);
+
     w->appIconBtn->setIcon(i);
     w->appIconBtn->setFlat(true);
     w->appIconBtn->setEnabled(false);
 
     w->appSlider->setMaximum(100);
-    w->appSlider->setFixedSize(178,20);
+    w->appSlider->setFixedSize(178,40);
     w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appLabel);
     w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appIconBtn);
     w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appSlider);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,6),w->appVolumeLabel);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appVolumeLabel);
 
     QString appSliderStr = app_name;
     QString appLabelStr = app_name;
@@ -665,14 +678,21 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
                      "notify::volume",
                      G_CALLBACK (update_app_volume),
                      w);
-    connect(w,&Widget::app_volume_changed,[=](bool is_mute,int volume){
+
+    connect(w,&Widget::app_volume_changed,[=](bool is_mute,int volume,const gchar *app_name){
 //        qDebug() << "获取的应用音量及静音状态" << volume << is_mute << appLabelStr;
 
     //        w->appSlider->setValue(volume);
-        QSlider *s = w->findChild<QSlider*>(appSliderStr);
+        QString slider_str = app_name;
+        slider_str.append("Slider");
+        QSlider *s = w->findChild<QSlider*>(slider_str);
         s->setValue(volume);
-
     });
+
+    if (appnum <= 0)
+        w->app_display_label->show();
+    else
+        w->app_display_label->hide();
 }
 
 /*
@@ -708,8 +728,11 @@ void Widget::update_app_volume(MateMixerStreamControl *control, GParamSpec *pspe
     volume = guint(value*100/65536.0+0.5);
     bool is_mute = mate_mixer_stream_control_get_mute(control);
     MateMixerStreamControlFlags control_flags = mate_mixer_stream_control_get_flags(control);
-    Q_EMIT w->app_volume_changed(is_mute,volume);
+    MateMixerAppInfo *info = mate_mixer_stream_control_get_app_info(control);
+    const gchar *app_name = mate_mixer_app_info_get_name(info);
+    Q_EMIT w->app_volume_changed(is_mute,volume,app_name);
 //    qDebug() << "发送信号同步音量值" << is_mute <<volume ;
+
     //静音可读并且处于静音
     if ((control_flags & MATE_MIXER_STREAM_CONTROL_MUTE_WRITABLE) ) {
     }
@@ -719,7 +742,7 @@ void Widget::update_app_volume(MateMixerStreamControl *control, GParamSpec *pspe
     }
 }
 
-void Widget::app_volume_changed_slot(bool is_mute,int volume)
+void Widget::app_volume_changed_slot(bool is_mute,int volume,const gchar *app_name)
 {
 
 }
@@ -796,16 +819,27 @@ void Widget::remove_stream (Widget *w, const gchar *name)
 //        GtkWidget    *bar;
 //        GtkTreeIter   iter;
 //        GtkTreeModel *model;
+    MateMixerStream *stream = mate_mixer_context_get_stream(w->context,name);
+    MateMixerDirection direction = mate_mixer_stream_get_direction(stream);
+    bool status;
+    if (direction == MATE_MIXER_DIRECTION_INPUT) {
+        status = w->input_stream_list->removeOne(name);
+        qDebug() << "移除input stream list " << status;
+    }
+    else if (direction == MATE_MIXER_DIRECTION_OUTPUT) {
+        status = w->output_stream_list->removeOne(name);
+        qDebug() << "移除input stream list " << status;
+    }
 
 //        bar = g_hash_table_lookup (dialog->priv->bars, name);
 
-//        if (bar != nullptr) {
+        if (w->app_volume_list != nullptr) {
 //                g_debug ("Removing stream %s from bar %s",
 //                         name,
 //                         gvc_channel_bar_get_name (GVC_CHANNEL_BAR (bar)));
 
-//                bar_set_stream (dialog, bar, NULL);
-//        }
+                bar_set_stream (w,  NULL);
+        }
 
         /* Remove from any models */
 //        model = gtk_tree_view_get_model (GTK_TREE_VIEW (dialog->priv->output_treeview));
@@ -930,7 +964,7 @@ void Widget::set_input_stream (Widget *w, MateMixerStream *stream)
         mate_mixer_stream_control_set_monitor_enabled (control, FALSE);
     }
 
-//        bar_set_stream (dialog, dialog->priv->input_bar, stream);
+    bar_set_stream (w, stream);
 
     if (stream != nullptr) {
         const GList *controls;
@@ -1011,15 +1045,15 @@ void Widget::on_context_stored_control_removed (MateMixerContext *context,const 
 
 //        bar = g_hash_table_lookup (dialog->priv->bars, name);
 
-//        if (bar != nullptr) {
-//                /* We only use a stored control in the effects bar */
+    if (w->app_volume_list != nullptr) {
+            /* We only use a stored control in the effects bar */
 //                if (G_UNLIKELY (bar != dialog->priv->effects_bar)) {
 //                        g_warn_if_reached ();
 //                        return;
 //                }
 
-//                bar_set_stream (dialog, bar, NULL);
-//        }
+            bar_set_stream (w, NULL);
+    }
 }
 
 /*
@@ -2012,6 +2046,7 @@ void Widget::play_alret_sound_from_path (QString path)
 void Widget::combox_index_changed_slot(int index)
 {
     QString sound_name = soundlist->at(index);
+    qDebug() << sound_name;
     play_alret_sound_from_path(sound_name);
 }
 
@@ -2032,11 +2067,10 @@ void Widget::output_device_combox_index_changed_slot(int index)
     qDebug() << "输出组合框index改变" << index  << output_stream_list->at(0);
     MateMixerBackendFlags flags;
     QString name = output_stream_list->at(index);
-    qDebug() << 2026;
     //QString转换为const char *
     const char *device_name = name.toLocal8Bit();
 
-    MateMixerStream *stream = mate_mixer_context_get_stream(context,"auto_null");
+    MateMixerStream *stream = mate_mixer_context_get_stream(context,device_name);
 
     qDebug() << "输出设备切换" << device_name << name << mate_mixer_stream_get_name(stream);
     flags = mate_mixer_context_get_backend_flags (context);
@@ -2069,7 +2103,7 @@ void Widget::input_device_combox_index_changed_slot(int index)
         mate_mixer_context_set_default_input_stream (context, stream);
     }
     else
-        set_output_stream (this, stream);
+        set_input_stream (this, stream);
 }
 
 void Widget::set_output_stream (Widget *w, MateMixerStream *stream)
@@ -2089,7 +2123,7 @@ void Widget::set_output_stream (Widget *w, MateMixerStream *stream)
 //                }
 //        }
 
-//        bar_set_stream (dialog, dialog->priv->output_bar, stream);
+        bar_set_stream (w,stream);
 
         if (stream != NULL) {
                 const GList *controls;
@@ -2135,6 +2169,74 @@ void Widget::update_output_stream_list(Widget *w,MateMixerStream *stream)
     }
 }
 
+/*
+    bar设置stream
+*/
+void Widget::bar_set_stream (Widget  *w,MateMixerStream *stream)
+{
+        MateMixerStreamControl *control = NULL;
+
+        if (stream != NULL)
+                control = mate_mixer_stream_get_default_control (stream);
+
+        bar_set_stream_control (w, control);
+}
+
+void Widget::bar_set_stream_control (Widget *w,MateMixerStreamControl *control)
+{
+        const gchar *name;
+        MateMixerStreamControl *previous;
+
+//        previous = gvc_channel_bar_get_control (GVC_CHANNEL_BAR (bar));
+//        if (previous == control)
+//                return;
+
+//        if (previous != NULL) {
+//                name = mate_mixer_stream_control_get_name (previous);
+
+//                g_debug ("Removing stream control %s from bar %s",
+//                         name,
+//                         gvc_channel_bar_get_name (GVC_CHANNEL_BAR (bar)));
+
+//                g_signal_handlers_disconnect_by_data (G_OBJECT (previous), dialog);
+
+//                /* This may not do anything because we no longer have the information
+//                 * about the owning stream, in case it was an input stream, make
+//                 * sure to disconnected from the peak level monitor */
+//                mate_mixer_stream_control_set_monitor_enabled (previous, FALSE);
+
+//                g_hash_table_remove (dialog->priv->bars, name);
+//        }
+
+//        gvc_channel_bar_set_control (GVC_CHANNEL_BAR (bar), control);
+
+        if (control != NULL) {
+                name = mate_mixer_stream_control_get_name (control);
+                qDebug() << "********control" << name;
+//                g_debug ("Setting stream control %s for bar %s",
+//                         name,
+//                         gvc_channel_bar_get_name (GVC_CHANNEL_BAR (bar)));
+
+//                g_hash_table_insert (dialog->priv->bars,
+//                                     (gpointer) name,
+//                                     bar);
+//                 printf("bar set stream control name %s\n",name);
+//                gtk_widget_set_sensitive (GTK_WIDGET (bar), TRUE);
+        } else
+            qDebug() << "set true";
+//                gtk_widget_set_sensitive (GTK_WIDGET (bar), TRUE);
+}
+
+
+AudioSlider::AudioSlider(QWidget *parent)
+{
+    Q_UNUSED(parent);
+}
+
+AudioSlider::~AudioSlider()
+{
+
+}
 
 Widget::~Widget()
 {

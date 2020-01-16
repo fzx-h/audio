@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     QTranslator translator;
 
     if (locale == "zh_CN") {
-        if (translator.load("/home/fzx/fzx/audio/audio-zh_CN.qm")) {
+        if (translator.load("/home/kylin/workspace/audio/audio-zh_CN.qm")) {
             a.installTranslator(&translator);
         }
         else {

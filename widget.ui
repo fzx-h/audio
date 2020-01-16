@@ -16,8 +16,8 @@
   <widget class="QLabel" name="inputLabel">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>210</y>
+     <x>0</x>
+     <y>200</y>
      <width>59</width>
      <height>20</height>
     </rect>
@@ -29,144 +29,17 @@
   <widget class="QListView" name="listView">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>40</y>
+     <x>0</x>
+     <y>30</y>
      <width>611</width>
      <height>151</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="inputDeviceLabel">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>50</y>
-     <width>141</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Select output device</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="outputDeviceCombobox">
-   <property name="geometry">
-    <rect>
-     <x>300</x>
-     <y>40</y>
-     <width>71</width>
-     <height>30</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="opVolumeLabel">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>80</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Volume</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="opIconlabel">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>80</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>icon</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="opVolumePercentLabel">
-   <property name="geometry">
-    <rect>
-     <x>320</x>
-     <y>80</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>0%</string>
-   </property>
-  </widget>
-  <widget class="QSlider" name="opVolumeSlider">
-   <property name="geometry">
-    <rect>
-     <x>140</x>
-     <y>80</y>
-     <width>160</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="opBalanceLabel">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>120</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Channel balance</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="leftBalanceLabel">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>120</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>left</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="rightBalanceLabel">
-   <property name="geometry">
-    <rect>
-     <x>350</x>
-     <y>130</y>
-     <width>59</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>right</string>
-   </property>
-  </widget>
-  <widget class="QSlider" name="opBalanceSlider">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>130</y>
-     <width>160</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
   <widget class="QLabel" name="OutputLabel">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>0</x>
      <y>10</y>
      <width>59</width>
      <height>20</height>
@@ -179,145 +52,18 @@
   <widget class="QListView" name="listView_2">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>230</y>
-     <width>641</width>
-     <height>131</height>
+     <x>0</x>
+     <y>220</y>
+     <width>611</width>
+     <height>141</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="outputDeviceLabel">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>240</y>
-     <width>121</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Select input device</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="inputDeviceCombobox">
-   <property name="geometry">
-    <rect>
-     <x>300</x>
-     <y>230</y>
-     <width>71</width>
-     <height>30</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="ipIconlabel">
-   <property name="geometry">
-    <rect>
-     <x>90</x>
-     <y>270</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>icon</string>
-   </property>
-  </widget>
-  <widget class="QSlider" name="inputLevelSlider">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>310</y>
-     <width>160</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="lowLevelLabel">
-   <property name="geometry">
-    <rect>
-     <x>90</x>
-     <y>310</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>low</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="ipVolumeLabel">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>270</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Volume</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="inputLevelLabel">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>310</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Input level</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="highLevelLabel">
-   <property name="geometry">
-    <rect>
-     <x>330</x>
-     <y>310</y>
-     <width>59</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>high</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="ipVolumePercentLabel">
-   <property name="geometry">
-    <rect>
-     <x>340</x>
-     <y>270</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>0%</string>
-   </property>
-  </widget>
-  <widget class="QSlider" name="ipVolumeSlider">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>270</y>
-     <width>160</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
    </property>
   </widget>
   <widget class="QLabel" name="soundEffectLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>380</y>
+     <x>0</x>
+     <y>370</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -326,89 +72,20 @@
     <string>System sound effects</string>
    </property>
   </widget>
-  <widget class="QLabel" name="soundThemeLabel">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>410</y>
-     <width>131</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>System sound theme</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="soundThemeCombobox">
-   <property name="geometry">
-    <rect>
-     <x>260</x>
-     <y>410</y>
-     <width>71</width>
-     <height>30</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QListView" name="listView_3">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>0</x>
      <y>440</y>
-     <width>641</width>
+     <width>611</width>
      <height>121</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="shutdownlabel">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>460</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>shutdown</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="shutdownCombobox">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>460</y>
-     <width>71</width>
-     <height>30</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="lagoutLabel">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>500</y>
-     <width>59</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Lagout</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="lagoutCombobox">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>500</y>
-     <width>71</width>
-     <height>30</height>
     </rect>
    </property>
   </widget>
   <widget class="QLabel" name="applicationLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>0</x>
      <y>580</y>
      <width>131</width>
      <height>20</height>
@@ -421,25 +98,282 @@
   <widget class="QTableView" name="appVolumeTableView">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>610</y>
-     <width>651</width>
+     <x>0</x>
+     <y>600</y>
+     <width>611</width>
      <height>192</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="label">
+  <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>830</y>
-     <width>59</width>
-     <height>20</height>
+     <y>30</y>
+     <width>571</width>
+     <height>41</height>
     </rect>
    </property>
-   <property name="text">
-    <string>TextLabel</string>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QLabel" name="inputDeviceLabel">
+      <property name="text">
+       <string>Select output device</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="outputDeviceCombobox"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_2">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>80</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
    </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QLabel" name="opVolumeLabel">
+      <property name="text">
+       <string>Volume</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="opIconlabel">
+      <property name="text">
+       <string>icon</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSlider" name="opVolumeSlider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="opVolumePercentLabel">
+      <property name="text">
+       <string>0%</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_3">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>130</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <item>
+     <widget class="QLabel" name="opBalanceLabel">
+      <property name="text">
+       <string>Channel balance</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="leftBalanceLabel">
+      <property name="text">
+       <string>left</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSlider" name="opBalanceSlider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="rightBalanceLabel">
+      <property name="text">
+       <string>right</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_4">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>220</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <item>
+     <widget class="QLabel" name="outputDeviceLabel">
+      <property name="text">
+       <string>Select input device</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="inputDeviceCombobox"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_5">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>270</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_5">
+    <item>
+     <widget class="QLabel" name="ipVolumeLabel">
+      <property name="text">
+       <string>Volume</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="ipIconlabel">
+      <property name="text">
+       <string>icon</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSlider" name="ipVolumeSlider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="ipVolumePercentLabel">
+      <property name="text">
+       <string>0%</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_6">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>320</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_6">
+    <item>
+     <widget class="QLabel" name="inputLevelLabel">
+      <property name="text">
+       <string>Input level</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lowLevelLabel">
+      <property name="text">
+       <string>low</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSlider" name="inputLevelSlider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="highLevelLabel">
+      <property name="text">
+       <string>high</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_7">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>390</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_7">
+    <item>
+     <widget class="QLabel" name="soundThemeLabel">
+      <property name="text">
+       <string>System sound theme</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="soundThemeCombobox"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_8">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>450</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_8">
+    <item>
+     <widget class="QLabel" name="shutdownlabel">
+      <property name="text">
+       <string>shutdown</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="shutdownCombobox"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="horizontalLayoutWidget_9">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>500</y>
+     <width>571</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_9">
+    <item>
+     <widget class="QLabel" name="lagoutLabel">
+      <property name="text">
+       <string>Lagout</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="lagoutCombobox"/>
+    </item>
+   </layout>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>

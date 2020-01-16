@@ -9,6 +9,9 @@
 #include <QWidget>
 #include <QStringList>
 #include <QMediaPlayer>
+#include <QEvent>
+#include <QMouseEvent>
+#include <QCoreApplication>
 extern "C" {
 #include <gio/gio.h>
 #include <libxml/tree.h>
@@ -24,6 +27,27 @@ extern "C" {
 namespace Ui {
 class Widget;
 }
+
+class AudioSlider : public QSlider
+{
+    Q_OBJECT
+public:
+    AudioSlider(QWidget *parent = nullptr);
+    ~AudioSlider();
+
+protected:
+    void mousePressEvent(QMouseEvent *ev)
+    {
+        //注意应先调用父类的鼠标点击处理事件，这样可以不影响拖动的情况
+        QSlider::mousePressEvent(ev);
+        //获取鼠标的位置，这里并不能直接从ev中取值（因为如果是拖动的话，鼠标开始点击的位置没有意义了）
+        double pos = ev->pos().x() / (double)width();
+        setValue(pos *(maximum() - minimum()) + minimum());
+        //向父窗口发送自定义事件event type，这样就可以在父窗口中捕获这个事件进行处理
+        QEvent evEvent(static_cast<QEvent::Type>(QEvent::User + 1));
+        QCoreApplication::sendEvent(parentWidget(), &evEvent);
+    }
+};
 
 class Widget : public QWidget
 {
@@ -46,10 +70,10 @@ public:
     static void add_application_control (Widget *w, MateMixerStreamControl *control);
     static void on_stream_control_added (MateMixerStream *stream,const gchar *name,Widget  *w);
     static void on_stream_control_removed (MateMixerStream *stream,const gchar *name,Widget *w);
-    static void remove_application_control (Widget *w, const gchar *name);
+    static void remove_application_control (Widget *w,const gchar *name);
     static void add_app_to_tableview(Widget *w,int appnum,QStandardItemModel *standItemModel,const gchar *app_name,QString app_icon_name,MateMixerStreamControl *control);
     static void on_context_stored_control_added (MateMixerContext *context,const gchar      *name,Widget *w);
-    static void update_app_volume (MateMixerStreamControl *control,GParamSpec *pspec,Widget *w);
+    static void update_app_volume (MateMixerStreamControl *control, GParamSpec *pspec ,Widget *w);
 
     static void on_context_device_added (MateMixerContext *context, const gchar *name, Widget *w);
     static void add_device (Widget *w, MateMixerDevice *device);
@@ -98,12 +122,15 @@ public:
     static void play_alret_sound_from_path (QString path);
     static void set_output_stream (Widget *w, MateMixerStream *stream);
     static void update_output_stream_list(Widget *w,MateMixerStream *stream);
+
+    static void bar_set_stream (Widget *w,MateMixerStream *stream);
+    static void bar_set_stream_control (Widget *w,MateMixerStreamControl *control);
 Q_SIGNALS:
-    void app_volume_changed(bool is_mute,int volume);
+    void app_volume_changed(bool is_mute,int volume,const gchar *app_name);
 
 private Q_SLOTS:
     void app_slider_changed_slot(int volume);
-    void app_volume_changed_slot(bool is_mute,int volume);
+    void app_volume_changed_slot(bool is_mute,int volume,const gchar *app_name);
     void output_volume_slider_changed_slot(int volume);
     void input_volume_slider_changed_slot(int volume);
     void combox_index_changed_slot(int index);
@@ -129,6 +156,9 @@ private:
     QStringList *device_display_name_list;
     QStringList *output_stream_list;
     QStringList *input_stream_list;
+    QStringList *app_volume_list;
+    QStringList *stream_control_list;
+
     GSettings *sound_settings;
     QLabel *app_display_label;
     Ui::Widget *ui;
