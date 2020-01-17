@@ -49,6 +49,7 @@ Widget::Widget(QWidget *parent) :
         qDebug() << "libmatemixer initialization failed, exiting";
     }
 
+    ui->appVolumeTableView->setSelectionMode(QAbstractItemView::NoSelection);
     soundlist = new QStringList;
     theme_name_list = new QStringList;
     theme_display_name_list = new QStringList;
@@ -137,7 +138,7 @@ Widget::Widget(QWidget *parent) :
     connect(this->ui->lagoutCombobox ,SIGNAL(currentIndexChanged(int)),this,SLOT(combox_index_changed_slot(int)));
     connect(this->ui->soundThemeCombobox,SIGNAL(currentIndexChanged(int)),this,SLOT(theme_combox_index_changed_slot(int)));
 
-//    setWindowFlag(Qt::ToolTip);
+//    setWindowFlag(Qt::Tool);
 }
 
 /*
@@ -182,6 +183,7 @@ void Widget::on_context_state_notify (MateMixerContext *context,GParamSpec *pspe
     connect(w->ui->outputDeviceCombobox,SIGNAL(currentIndexChanged(int)),w,SLOT(output_device_combox_index_changed_slot(int)));
     //点击输入设备
     connect(w->ui->inputDeviceCombobox,SIGNAL(currentIndexChanged(int)),w,SLOT(input_device_combox_index_changed_slot(int)));
+
 }
 
 /*
@@ -618,27 +620,30 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
     XdgDesktopFile xdg;
     xdg.load(iconName);
     QIcon i=xdg.icon();
-//    GError **error = nullptr;
-//    GKeyFileFlags flags = G_KEY_FILE_NONE;
-//    GKeyFile *keyflie = g_key_file_new();
-//    QByteArray fpbyte = iconName.toLocal8Bit();
-//    char *filepath = "/usr/share/applications";//fpbyte.data();
-//    g_key_file_load_from_file(keyflie,iconName.toLocal8Bit(),flags,error);
-//    char *icon = g_key_file_get_locale_string(keyflie,"Desktop Entry","Icon",nullptr,nullptr);
-//    qDebug() << "+++++++++++++ icon" << icon << "file path"<< filepath;
+    GError **error = nullptr;
+    GKeyFileFlags flags = G_KEY_FILE_NONE;
+    GKeyFile *keyflie = g_key_file_new();
+    QByteArray fpbyte = iconName.toLocal8Bit();
+    char *filepath = "/usr/share/applications";//fpbyte.data();
+    g_key_file_load_from_file(keyflie,iconName.toLocal8Bit(),flags,error);
+    char *icon_str = g_key_file_get_locale_string(keyflie,"Desktop Entry","Icon",nullptr,nullptr);
+    qDebug() << "+++++++++++++ icon" << icon_str << "file path"<< filepath;
+    QIcon icon = QIcon::fromTheme(QString::fromLocal8Bit(icon_str));
     w->app_volume_list->append(app_icon_name);
 
     w->appLabel = new QLabel(w->ui->appVolumeTableView);
     w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
     w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
-    w->appSlider = new QSlider(Qt::Horizontal,w->ui->appVolumeTableView);
+    w->appSlider = new AudioSlider(w->ui->appVolumeTableView);
+    w->appSlider->setOrientation(Qt::Horizontal);
 
-    w->appIconBtn->setIcon(i);
+    w->appIconBtn->setStyleSheet("QPushButton{background:transparent;border:0px;padding-left:0px;}");
+    w->appIconBtn->setIcon(icon);
     w->appIconBtn->setFlat(true);
-    w->appIconBtn->setEnabled(false);
+    w->appIconBtn->setEnabled(true);
 
     w->appSlider->setMaximum(100);
-    w->appSlider->setFixedSize(178,40);
+    w->appSlider->setFixedSize(178,20);
     w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appLabel);
     w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appIconBtn);
     w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appSlider);
@@ -1121,6 +1126,25 @@ void Widget::update_icon_input (Widget *w)
     QString percent = QString::number(value);
     percent.append("%");
     w->ui->ipVolumePercentLabel->setText(percent);
+    w->ui->input_icon_btn->setFocusPolicy(Qt::NoFocus);
+    w->ui->input_icon_btn->setStyleSheet("QPushButton{background:transparent;border:0px;padding-left:0px;}");
+
+    QIcon icon;
+    const QSize icon_size = QSize(24,24);
+    w->ui->input_icon_btn->setIconSize(icon_size);
+    if (value <= 0) {
+        w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-mute.png"));
+    }
+    else if (value > 0 && value <= 33) {
+        w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-low.png"));
+    }
+    else if (value >33 && value <= 66) {
+
+        w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-medium.png"));
+    }
+    else {
+        w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-high.png"));
+    }
 
     while (inputs != nullptr) {
         MateMixerStreamControl *input = MATE_MIXER_STREAM_CONTROL (inputs->data);
@@ -1166,22 +1190,27 @@ void Widget::update_icon_input (Widget *w)
 
         connect(w->ui->ipVolumeSlider,&QSlider::valueChanged,[=](int value){
             QString percent;
-            if (volume < 0) {
+            if (value <= 0) {
                 mate_mixer_stream_control_set_mute(control,TRUE);
                 mate_mixer_stream_control_set_volume(control,0);
                 percent = QString::number(0);
-
+                w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-mute.png"));
+            }
+            else if (value > 0 && value <= 33) {
+                w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-low.png"));
+            }
+            else if (value >33 && value <= 66) {
+                w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-medium.png"));
             }
             else {
-                percent = QString::number(value);
-                mate_mixer_stream_control_set_mute(control,FALSE);
-                int volume = value*65536/100;
-                gboolean ok = mate_mixer_stream_control_set_volume(control,volume);
-//                qDebug() << "输入滑动条音量值" << volume << ok;
+                w->ui->input_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/microphone-high.png"));
             }
+            percent = QString::number(value);
+            mate_mixer_stream_control_set_mute(control,FALSE);
+            int volume = value*65536/100;
+            gboolean ok = mate_mixer_stream_control_set_volume(control,volume);
             percent.append("%");
             w->ui->ipVolumePercentLabel->setText(percent);
-
         });
         gvc_stream_status_icon_set_control (w, control);
 
@@ -1219,23 +1248,49 @@ void Widget::update_icon_output (Widget *w)
     QString percent = QString::number(value);
     percent.append("%");
     w->ui->opVolumePercentLabel->setText(percent);
+    w->ui->output_icon_btn->setFocusPolicy(Qt::NoFocus);
+    w->ui->output_icon_btn->setStyleSheet("QPushButton{background:transparent;border:0px;padding-left:0px;}");
+    QIcon icon;
+    const QSize icon_size = QSize(24,24);
+    w->ui->output_icon_btn->setIconSize(icon_size);
+    if (value <= 0) {
+        w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-mute.png"));
+    }
+    else if (value > 0 && value <= 33) {
+        w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-low.png"));
+    }
+    else if (value >33 && value <= 66) {
+
+        w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-medium.png"));
+    }
+    else {
+        w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-high.png"));
+    }
+
 
     //输出音量控制
     //输出滑动条和音量控制
     connect(w->ui->opVolumeSlider,&QSlider::valueChanged,[=](int value){
         QString percent;
-        if (volume < 0) {
+        if (value <= 0) {
             mate_mixer_stream_control_set_mute(control,TRUE);
             mate_mixer_stream_control_set_volume(control,0);
             percent = QString::number(0);
+            w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-mute.png"));
+        }
+        else if (value > 0 && value <= 33) {
+            w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-low.png"));
+        }
+        else if (value >33 && value <= 66) {
+            w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-medium.png"));
         }
         else {
-            percent = QString::number(value);
-            mate_mixer_stream_control_set_mute(control,FALSE);
-            int volume = value*65536/100;
-            gboolean ok = mate_mixer_stream_control_set_volume(control,volume);
-//            qDebug() << "输入滑动条音量值" << volume << ok;
+            w->ui->output_icon_btn->setIcon(QIcon("/usr/share/ukui-media/img/audio-high.png"));
         }
+        percent = QString::number(value);
+        mate_mixer_stream_control_set_mute(control,FALSE);
+        int volume = value*65536/100;
+        gboolean ok = mate_mixer_stream_control_set_volume(control,volume);
         percent.append("%");
         w->ui->opVolumePercentLabel->setText(percent);
     });
@@ -1267,6 +1322,12 @@ void Widget::gvc_stream_status_icon_set_control (Widget *w,MateMixerStreamContro
                       G_CALLBACK (on_stream_control_mute_notify),
                       w);
 
+    MateMixerDirection direction = mate_mixer_stored_control_get_direction((MateMixerStoredControl *)control);
+    if (direction == MATE_MIXER_DIRECTION_OUTPUT)
+        qDebug() << "output******************";
+    else if (direction == MATE_MIXER_DIRECTION_INPUT) {
+        qDebug() << "input*****************";
+    }
 //    connect(w->ui->opVolumeSlider,SIGNAL(valueChanged(int)),w,SLOT(output_volume_slider_changed_slot(int)));
 
         if (control != nullptr)
