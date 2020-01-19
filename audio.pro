@@ -39,7 +39,7 @@ SOURCES += \
 
 HEADERS += \
         utils.h \
-    ukmedia_control_center_widget.h
+        ukmedia_control_center_widget.h
 #    appvolume.h
 
 FORMS += \
