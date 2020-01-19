@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2019 Tianjin KYLIN Information Technology Co., Ltd.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/&gt;.
+ *
+ */
 #include "ukmedia_control_center_widget.h"
 #include "ui_widget.h"
 #include <QDebug>
@@ -175,7 +192,8 @@ UkmediaControlCenterWidget::UkmediaControlCenterWidget(QWidget *parent) :
     ui->soundThemeCombobox->setView(new QListView());
     ui->shutdownCombobox->setView(new QListView());
     ui->lagoutCombobox->setView(new QListView());
-//    setWindowFlag(Qt::Tool);
+    setWindowFlags(Qt::ToolTip);
+
 }
 
 /*
@@ -487,13 +505,6 @@ void UkmediaControlCenterWidget::add_application_control (UkmediaControlCenterWi
         w->standItemModel->setRowCount(appnum);
 
         w->ui->appVolumeTableView->setModel(w->standItemModel);
-
-        //设置QTableView每行的宽度
-        w->ui->appVolumeTableView->setColumnWidth(0,56);
-        w->ui->appVolumeTableView->setColumnWidth(1,88);
-        w->ui->appVolumeTableView->setColumnWidth(2,40);
-        w->ui->appVolumeTableView->setColumnWidth(3,180);
-        w->ui->appVolumeTableView->setColumnWidth(4,40);
         add_app_to_tableview(w,appnum,w->standItemModel,app_name,app_icon_name,control);
 
 //    }
@@ -635,6 +646,13 @@ void UkmediaControlCenterWidget::remove_application_control (UkmediaControlCente
 
 void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget *w,int appnum, QStandardItemModel *standItemModel,const gchar *app_name,QString app_icon_name,MateMixerStreamControl *control)
 {
+    //设置QTableView每行的宽度
+    w->ui->appVolumeTableView->setColumnWidth(0,56);
+    w->ui->appVolumeTableView->setColumnWidth(1,88);
+    w->ui->appVolumeTableView->setColumnWidth(2,40);
+    w->ui->appVolumeTableView->setColumnWidth(3,180);
+    w->ui->appVolumeTableView->setColumnWidth(4,40);
+
     //获取应用静音状态及音量
     int volume = 0;
     gboolean is_mute = false;
@@ -644,7 +662,6 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
     normal = mate_mixer_stream_control_get_normal_volume(control);
 
     int display_volume = 100 * volume / normal;
-
 
     //设置应用的图标
     QString iconName = "/usr/share/applications/";
@@ -663,7 +680,7 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
     QIcon icon = QIcon::fromTheme(QString::fromLocal8Bit(icon_str));
     w->app_volume_list->append(app_icon_name);
 
-    //
+    //widget显示应用音量
     QWidget *app_widget = new QWidget(w);
     app_widget->setMinimumSize(552,50);
     app_widget->setMaximumSize(800,50);
@@ -681,32 +698,33 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
     w->appIconLabel->setFixedSize(24,24);
     w->appVolumeLabel->setFixedSize(36,14);
 
-//    QSpacerItem *item1 = new QSpacerItem(16,20);
-//    QSpacerItem *item2 = new QSpacerItem(8,20);
-//    QSpacerItem *item3 = new QSpacerItem(16,20);
-//    QSpacerItem *item4 = new QSpacerItem(16,20);
-//    QSpacerItem *item5 = new QSpacerItem(16,20);
-//    QSpacerItem *item6 = new QSpacerItem(16,20);
-//    hlayout->addItem(item1);
-//    hlayout->addWidget(w->appIconBtn);
-//    hlayout->addItem(item2);
-//    hlayout->addWidget(w->appLabel);
-//    hlayout->addItem(item3);
-//    hlayout->addWidget(w->appIconLabel);
-//    hlayout->addItem(item4);
-//    hlayout->addWidget(w->appSlider);
-//    hlayout->addItem(item5);
-//    hlayout->addWidget(w->appVolumeLabel);
-//    hlayout->addItem(item6);
-//    app_widget->setLayout(hlayout);
-//    app_widget->layout()->setSpacing(0);
-//    app_widget->move(0,742+(appnum-1)*50);
+    QSpacerItem *item1 = new QSpacerItem(16,20);
+    QSpacerItem *item2 = new QSpacerItem(8,20);
+    QSpacerItem *item3 = new QSpacerItem(16,20);
+    QSpacerItem *item4 = new QSpacerItem(16,20);
+    QSpacerItem *item5 = new QSpacerItem(16,20);
+    QSpacerItem *item6 = new QSpacerItem(16,20);
+    hlayout->addItem(item1);
+    hlayout->addWidget(w->appIconBtn);
+    hlayout->addItem(item2);
+    hlayout->addWidget(w->appLabel);
+    hlayout->addItem(item3);
+    hlayout->addWidget(w->appIconLabel);
+    hlayout->addItem(item4);
+    hlayout->addWidget(w->appSlider);
+    hlayout->addItem(item5);
+    hlayout->addWidget(w->appVolumeLabel);
+    hlayout->addItem(item6);
+    app_widget->setLayout(hlayout);
+    app_widget->layout()->setSpacing(0);
+    app_widget->move(0,742+(appnum-1)*50);
+    app_widget->show();
 
-    w->appLabel = new QLabel(w->ui->appVolumeTableView);
-    w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
-    w->appIconLabel = new QLabel(w->ui->appVolumeTableView);
-    w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
-    w->appSlider = new AudioSlider(w->ui->appVolumeTableView);
+//    w->appLabel = new QLabel(w->ui->appVolumeTableView);
+//    w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
+//    w->appIconLabel = new QLabel(w->ui->appVolumeTableView);
+//    w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
+//    w->appSlider = new AudioSlider(w->ui->appVolumeTableView);
     w->appSlider->setOrientation(Qt::Horizontal);
 
     QSize icon_size(32,32);
@@ -714,16 +732,17 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
     w->appIconBtn->setStyleSheet("QPushButton{background:transparent;border:0px;padding-left:0px;}");
     w->appIconBtn->setIcon(icon);
     w->appIconBtn->setFlat(true);
+    w->appIconBtn->setFocusPolicy(Qt::NoFocus);
     w->appIconBtn->setEnabled(true);
 
     w->appSlider->setMaximum(100);
     w->appSlider->setMinimumSize(178,20);
     w->appSlider->setMaximumSize(800,20);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appIconBtn);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appLabel);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appIconLabel);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appSlider);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,4),w->appVolumeLabel);
+//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appIconBtn);
+//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appLabel);
+//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appIconLabel);
+//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appSlider);
+//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,4),w->appVolumeLabel);
 
     QString appSliderStr = app_name;
     QString appLabelStr = app_name;
@@ -740,7 +759,7 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
 
     w->appVolumeLabel->setNum(display_volume);
 //    connect(w->appSlider,SIGNAL(valueChanged(int)),w,SLOT(app_slider_changed_slot(int)));
-//    app_widget->show();
+
 
     //设置声音标签图标
     QPixmap pix;
