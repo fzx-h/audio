@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>718</width>
-    <height>1245</height>
+    <width>584</width>
+    <height>951</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -197,13 +197,13 @@
              <property name="minimumSize">
               <size>
                <width>390</width>
-               <height>32</height>
+               <height>30</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>44444</width>
-               <height>32</height>
+               <height>30</height>
               </size>
              </property>
             </widget>
@@ -792,7 +792,20 @@
             </spacer>
            </item>
            <item>
-            <widget class="QComboBox" name="inputDeviceCombobox"/>
+            <widget class="QComboBox" name="inputDeviceCombobox">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_19">
@@ -1330,7 +1343,20 @@
          </spacer>
         </item>
         <item>
-         <widget class="QComboBox" name="soundThemeCombobox"/>
+         <widget class="QComboBox" name="soundThemeCombobox">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+         </widget>
         </item>
         <item>
          <spacer name="horizontalSpacer_38">
@@ -1486,7 +1512,20 @@
             </spacer>
            </item>
            <item>
-            <widget class="QComboBox" name="shutdownCombobox"/>
+            <widget class="QComboBox" name="shutdownCombobox">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_33">
@@ -1596,7 +1635,20 @@
             </spacer>
            </item>
            <item>
-            <widget class="QComboBox" name="lagoutCombobox"/>
+            <widget class="QComboBox" name="lagoutCombobox">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
+              </size>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_34">

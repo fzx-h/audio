@@ -33,13 +33,13 @@ PKGCONFIG += libmatemixer \
 
 SOURCES += \
         main.cpp \
-        widget.cpp \
         utils.cpp \
+    ukmedia_control_center_widget.cpp
 #    appvolume.cpp
 
 HEADERS += \
-        widget.h \
         utils.h \
+    ukmedia_control_center_widget.h
 #    appvolume.h
 
 FORMS += \
@@ -53,7 +53,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 LIBS += /usr/lib/x86_64-linux-gnu/libgio-2.0.so
 INCLUDEPATH +=  /usr/include/glib-2.0/
 
-TRANSLATIONS += audio-zh_CN.ts
+TRANSLATIONS += translations/audio-zh_CN.ts
 
 DISTFILES +=
 

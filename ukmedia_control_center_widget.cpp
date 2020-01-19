@@ -1,4 +1,4 @@
-#include "widget.h"
+#include "ukmedia_control_center_widget.h"
 #include "ui_widget.h"
 #include <QDebug>
 extern "C" {
@@ -15,6 +15,8 @@ extern "C" {
 #include <QScrollArea>
 #include <QHeaderView>
 #include <QStringList>
+#include <QSpacerItem>
+#include <QListView>
 #define MATE_DESKTOP_USE_UNSTABLE_API
 #define VERSION "1.12.1"
 #define GVC_DIALOG_DBUS_NAME "org.mate.VolumeControl"
@@ -39,7 +41,7 @@ enum {
     SOUND_TYPE_CUSTOM
 };
 
-Widget::Widget(QWidget *parent) :
+UkmediaControlCenterWidget::UkmediaControlCenterWidget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget)
 {
@@ -49,7 +51,7 @@ Widget::Widget(QWidget *parent) :
         qDebug() << "libmatemixer initialization failed, exiting";
     }
 
-    ui->appVolumeTableView->setSelectionMode(QAbstractItemView::NoSelection);
+//    ui->appVolumeTableView->setSelectionMode(QAbstractItemView::NoSelection);
     soundlist = new QStringList;
     theme_name_list = new QStringList;
     theme_display_name_list = new QStringList;
@@ -64,7 +66,7 @@ Widget::Widget(QWidget *parent) :
 
     //创建ItemModel 添加应用音量
     standItemModel = new QStandardItemModel();
-    standItemModel->setColumnCount(4);
+    standItemModel->setColumnCount(5);
 
     //创建context
     context = mate_mixer_context_new();
@@ -117,8 +119,6 @@ Widget::Widget(QWidget *parent) :
     ui->opBalanceSlider->setSingleStep(100);
     ui->inputLevelSlider->setMaximum(100);
 
-    ui->appVolumeTableView->setColumnWidth(2,180);
-
     //设置声音主题
     //获取声音gsettings值
     sound_settings = g_settings_new (KEY_SOUNDS_SCHEMA);
@@ -138,13 +138,50 @@ Widget::Widget(QWidget *parent) :
     connect(this->ui->lagoutCombobox ,SIGNAL(currentIndexChanged(int)),this,SLOT(combox_index_changed_slot(int)));
     connect(this->ui->soundThemeCombobox,SIGNAL(currentIndexChanged(int)),this,SLOT(theme_combox_index_changed_slot(int)));
 
+    //设置样式
+    ui->outputDeviceCombobox->setStyleSheet("QComboBox {width:140px;height:30px;background:rgba(248,248,248,1);"
+                                            "border:2px solid rgba(218, 227, 250, 1);border-radius:4px;}"
+                                            "QComboBox::drop-down{background-color:rgba(248,248,248,1);}"
+                                            "QComboBox:on{background:linear-gradient(0deg,rgba(248,248,248,1) 0%,rgba(248,248,248,0.9) 100%);"
+                                            "border-radius:4px;}"
+                                            );
+    ui->inputDeviceCombobox->setStyleSheet("QComboBox {width:140px;height:30px;background:rgba(248,248,248,1);"
+                                            "border:2px solid rgba(218, 227, 250, 1);border-radius:4px;}"
+                                            "QComboBox::drop-down{background-color:rgba(248,248,248,1);}"
+                                            "QComboBox:on{background:linear-gradient(0deg,rgba(248,248,248,1) 0%,rgba(248,248,248,0.9) 100%);"
+                                            "border-radius:4px;}"
+                                            );
+    ui->soundThemeCombobox->setStyleSheet("QComboBox {width:140px;height:30px;background:rgba(248,248,248,1);"
+                                            "border:2px solid rgba(218, 227, 250, 1);border-radius:4px;}"
+                                            "QComboBox::drop-down{background-color:rgba(248,248,248,1);}"
+                                            "QComboBox:on{background:linear-gradient(0deg,rgba(248,248,248,1) 0%,rgba(248,248,248,0.9) 100%);"
+                                            "border-radius:4px;}"
+                                            );
+    ui->shutdownCombobox->setStyleSheet("QComboBox {width:140px;height:30px;background:rgba(248,248,248,1);"
+                                            "border:2px solid rgba(218, 227, 250, 1);border-radius:4px;}"
+                                            "QComboBox::drop-down{background-color:rgba(248,248,248,1);}"
+                                            "QComboBox:on{background:linear-gradient(0deg,rgba(248,248,248,1) 0%,rgba(248,248,248,0.9) 100%);"
+                                            "border-radius:4px; }"
+                                            );
+    ui->lagoutCombobox->setStyleSheet("QComboBox {width:140px;height:30px;background:rgba(248,248,248,1);"
+                                            "border:2px solid rgba(218, 227, 250, 1);border-radius:4px;}"
+                                            "QComboBox::drop-down{background-color:rgba(248,248,248,1);}"
+                                            "QComboBox:on{background:linear-gradient(0deg,rgba(248,248,248,1) 0%,rgba(248,248,248,0.9) 100%);"
+                                            "border-radius:4px;}"
+                                            );
+
+    ui->outputDeviceCombobox->setView(new QListView());
+    ui->inputDeviceCombobox->setView(new QListView());
+    ui->soundThemeCombobox->setView(new QListView());
+    ui->shutdownCombobox->setView(new QListView());
+    ui->lagoutCombobox->setView(new QListView());
 //    setWindowFlag(Qt::Tool);
 }
 
 /*
  * context状态通知
 */
-void Widget::on_context_state_notify (MateMixerContext *context,GParamSpec *pspec,Widget	*w)
+void UkmediaControlCenterWidget::on_context_state_notify (MateMixerContext *context,GParamSpec *pspec,UkmediaControlCenterWidget *w)
 {
     MateMixerState state = mate_mixer_context_get_state (context);
     list_device(w,context);
@@ -189,7 +226,7 @@ void Widget::on_context_state_notify (MateMixerContext *context,GParamSpec *pspe
 /*
     context 存储control增加
 */
-void Widget::on_context_stored_control_added (MateMixerContext *context,const gchar      *name,Widget *w)
+void UkmediaControlCenterWidget::on_context_stored_control_added (MateMixerContext *context,const gchar *name,UkmediaControlCenterWidget *w)
 {
     MateMixerStreamControl *control;
     MateMixerStreamControlMediaRole media_role;
@@ -208,7 +245,7 @@ void Widget::on_context_stored_control_added (MateMixerContext *context,const gc
 /*
     当其他设备插入时添加这个stream
 */
-void Widget::on_context_stream_added (MateMixerContext *context,const gchar *name,Widget *w)
+void UkmediaControlCenterWidget::on_context_stream_added (MateMixerContext *context,const gchar *name,UkmediaControlCenterWidget *w)
 {
     MateMixerStream *stream;
     MateMixerDirection direction;
@@ -253,7 +290,7 @@ void Widget::on_context_stream_added (MateMixerContext *context,const gchar *nam
 /*
 列出设备
 */
-void Widget::list_device(Widget *w,MateMixerContext *context)
+void UkmediaControlCenterWidget::list_device(UkmediaControlCenterWidget *w,MateMixerContext *context)
 {
     const GList *list;
     const GList *stream_list;
@@ -311,7 +348,7 @@ void Widget::list_device(Widget *w,MateMixerContext *context)
 
 }
 
-void Widget::add_stream (Widget *w, MateMixerStream *stream,MateMixerContext *context)
+void UkmediaControlCenterWidget::add_stream (UkmediaControlCenterWidget *w, MateMixerStream *stream,MateMixerContext *context)
 {
 //        GtkTreeModel      *model = nullptr;
 //        GtkTreeIter        iter;
@@ -403,7 +440,7 @@ void Widget::add_stream (Widget *w, MateMixerStream *stream,MateMixerContext *co
 /*
     添加应用音量控制
 */
-void Widget::add_application_control (Widget *w, MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::add_application_control (UkmediaControlCenterWidget *w, MateMixerStreamControl *control)
 {
     MateMixerStream *stream;
     MateMixerStreamControlMediaRole media_role;
@@ -450,11 +487,13 @@ void Widget::add_application_control (Widget *w, MateMixerStreamControl *control
         w->standItemModel->setRowCount(appnum);
 
         w->ui->appVolumeTableView->setModel(w->standItemModel);
+
         //设置QTableView每行的宽度
-        w->ui->appVolumeTableView->setColumnWidth(0,100);
-        w->ui->appVolumeTableView->setColumnWidth(1,40);
-        w->ui->appVolumeTableView->setColumnWidth(2,180);
-        w->ui->appVolumeTableView->setColumnWidth(3,40);
+        w->ui->appVolumeTableView->setColumnWidth(0,56);
+        w->ui->appVolumeTableView->setColumnWidth(1,88);
+        w->ui->appVolumeTableView->setColumnWidth(2,40);
+        w->ui->appVolumeTableView->setColumnWidth(3,180);
+        w->ui->appVolumeTableView->setColumnWidth(4,40);
         add_app_to_tableview(w,appnum,w->standItemModel,app_name,app_icon_name,control);
 
 //    }
@@ -507,7 +546,7 @@ void Widget::add_application_control (Widget *w, MateMixerStreamControl *control
 //        gtk_widget_show (bar);
 }
 
-void Widget::on_stream_control_added (MateMixerStream *stream,const gchar *name,Widget *w)
+void UkmediaControlCenterWidget::on_stream_control_added (MateMixerStream *stream,const gchar *name,UkmediaControlCenterWidget *w)
 {
     MateMixerStreamControl    *control;
     MateMixerStreamControlRole role;
@@ -526,7 +565,7 @@ void Widget::on_stream_control_added (MateMixerStream *stream,const gchar *name,
 /*
     移除control
 */
-void Widget::on_stream_control_removed (MateMixerStream *stream,const gchar *name,Widget *w)
+void UkmediaControlCenterWidget::on_stream_control_removed (MateMixerStream *stream,const gchar *name,UkmediaControlCenterWidget *w)
 {
     MateMixerStreamControl *control;
     qDebug() << "stream control remove" << name;
@@ -556,7 +595,7 @@ void Widget::on_stream_control_removed (MateMixerStream *stream,const gchar *nam
     remove_application_control (w, name);
 }
 
-void Widget::remove_application_control (Widget *w,const gchar *name)
+void UkmediaControlCenterWidget::remove_application_control (UkmediaControlCenterWidget *w,const gchar *name)
 {
 //        GtkWidget *bar;
 
@@ -580,7 +619,8 @@ void Widget::remove_application_control (Widget *w,const gchar *name)
 //    const gchar *app_name = mate_mixer_app_info_get_name(info);
     qDebug() << "移除stream control" << i << "移除应用app_name  name"  << name << index << w->stream_control_list->size() ;
 //    w->app_volume_list->removeAt(index);
-//    w->standItemModel->removeRows(0,i+1);
+    w->standItemModel->removeRows(0,1);
+
     if (appnum <= 0) {
         g_warn_if_reached ();
         appnum = 1;
@@ -593,7 +633,7 @@ void Widget::remove_application_control (Widget *w,const gchar *name)
 
 }
 
-void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *standItemModel,const gchar *app_name,QString app_icon_name,MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget *w,int appnum, QStandardItemModel *standItemModel,const gchar *app_name,QString app_icon_name,MateMixerStreamControl *control)
 {
     //获取应用静音状态及音量
     int volume = 0;
@@ -602,16 +642,9 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
     is_mute = mate_mixer_stream_control_get_mute(control);
     volume = mate_mixer_stream_control_get_volume(control);
     normal = mate_mixer_stream_control_get_normal_volume(control);
-//    qDebug() << "转换前" << volume << normal << app_name << endl;
-//    if(volume <= normal / 100 * 60.0)
-//        volume = volume / 3.0;
-//    else if(volume > normal / 100.0 * 80.0)
-//        volume = normal / 100.0 * 40.0 +(volume - normal / 100.0 * 80.0) * 3.0;
-//    else
-//        volume = volume - normal / 100.0 * 40.0;
+
     int display_volume = 100 * volume / normal;
 
-//    qDebug() <<"转换后" << volume << normal << display_volume << app_name << endl;
 
     //设置应用的图标
     QString iconName = "/usr/share/applications/";
@@ -627,27 +660,70 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
     char *filepath = "/usr/share/applications";//fpbyte.data();
     g_key_file_load_from_file(keyflie,iconName.toLocal8Bit(),flags,error);
     char *icon_str = g_key_file_get_locale_string(keyflie,"Desktop Entry","Icon",nullptr,nullptr);
-    qDebug() << "+++++++++++++ icon" << icon_str << "file path"<< filepath;
     QIcon icon = QIcon::fromTheme(QString::fromLocal8Bit(icon_str));
     w->app_volume_list->append(app_icon_name);
 
+    //
+    QWidget *app_widget = new QWidget(w);
+    app_widget->setMinimumSize(552,50);
+    app_widget->setMaximumSize(800,50);
+    QHBoxLayout *hlayout = new QHBoxLayout(app_widget);
+    w->appLabel = new QLabel(app_widget);
+    w->appIconBtn = new QPushButton(app_widget);
+    w->appIconLabel = new QLabel(app_widget);
+    w->appVolumeLabel = new QLabel(app_widget);
+    w->appSlider = new AudioSlider(app_widget);
+    w->appSlider->setOrientation(Qt::Horizontal);
+
+    //设置每项的固定大小
+    w->appLabel->setFixedSize(88,14);
+    w->appIconBtn->setFixedSize(32,32);
+    w->appIconLabel->setFixedSize(24,24);
+    w->appVolumeLabel->setFixedSize(36,14);
+
+//    QSpacerItem *item1 = new QSpacerItem(16,20);
+//    QSpacerItem *item2 = new QSpacerItem(8,20);
+//    QSpacerItem *item3 = new QSpacerItem(16,20);
+//    QSpacerItem *item4 = new QSpacerItem(16,20);
+//    QSpacerItem *item5 = new QSpacerItem(16,20);
+//    QSpacerItem *item6 = new QSpacerItem(16,20);
+//    hlayout->addItem(item1);
+//    hlayout->addWidget(w->appIconBtn);
+//    hlayout->addItem(item2);
+//    hlayout->addWidget(w->appLabel);
+//    hlayout->addItem(item3);
+//    hlayout->addWidget(w->appIconLabel);
+//    hlayout->addItem(item4);
+//    hlayout->addWidget(w->appSlider);
+//    hlayout->addItem(item5);
+//    hlayout->addWidget(w->appVolumeLabel);
+//    hlayout->addItem(item6);
+//    app_widget->setLayout(hlayout);
+//    app_widget->layout()->setSpacing(0);
+//    app_widget->move(0,742+(appnum-1)*50);
+
     w->appLabel = new QLabel(w->ui->appVolumeTableView);
     w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
+    w->appIconLabel = new QLabel(w->ui->appVolumeTableView);
     w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
     w->appSlider = new AudioSlider(w->ui->appVolumeTableView);
     w->appSlider->setOrientation(Qt::Horizontal);
 
+    QSize icon_size(32,32);
+    w->appIconBtn->setIconSize(icon_size);
     w->appIconBtn->setStyleSheet("QPushButton{background:transparent;border:0px;padding-left:0px;}");
     w->appIconBtn->setIcon(icon);
     w->appIconBtn->setFlat(true);
     w->appIconBtn->setEnabled(true);
 
     w->appSlider->setMaximum(100);
-    w->appSlider->setFixedSize(178,20);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appLabel);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appIconBtn);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appSlider);
-    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appVolumeLabel);
+    w->appSlider->setMinimumSize(178,20);
+    w->appSlider->setMaximumSize(800,20);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appIconBtn);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appLabel);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appIconLabel);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appSlider);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,4),w->appVolumeLabel);
 
     QString appSliderStr = app_name;
     QString appLabelStr = app_name;
@@ -663,9 +739,27 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
     w->appLabel->setText(app_name);
 
     w->appVolumeLabel->setNum(display_volume);
-    w->appSlider->setValue(display_volume);
-//    qDebug() << "应用静音状态及音量为" << is_mute <<volume ;
 //    connect(w->appSlider,SIGNAL(valueChanged(int)),w,SLOT(app_slider_changed_slot(int)));
+//    app_widget->show();
+
+    //设置声音标签图标
+    QPixmap pix;
+    if (display_volume <= 0) {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-mute.png");
+        w->appIconLabel->setPixmap(pix);
+    }
+    else if (display_volume > 0 && display_volume <= 33) {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-low.png");
+        w->appIconLabel->setPixmap(pix);
+    }
+    else if (display_volume >33 && display_volume <= 66) {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-medium.png");
+        w->appIconLabel->setPixmap(pix);
+    }
+    else {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-high.png");
+        w->appIconLabel->setPixmap(pix);
+    }
 
     /*滑动条控制应用音量*/
     connect(w->appSlider,&QSlider::valueChanged,[=](int value){
@@ -676,6 +770,26 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
 
         int v = value*65536/100 + 0.5;
         mate_mixer_stream_control_set_volume(control,(int)v);
+        //设置声音标签图标
+        QPixmap pix;
+
+        if (value <= 0) {
+            pix = QPixmap("/usr/share/ukui-media/img/audio-mute.png");
+            w->appIconLabel->setPixmap(pix);
+        }
+        else if (value > 0 && value <= 33) {
+            pix = QPixmap("/usr/share/ukui-media/img/audio-low.png");
+            w->appIconLabel->setPixmap(pix);
+        }
+        else if (value >33 && value <= 66) {
+            pix = QPixmap("/usr/share/ukui-media/img/audio-medium.png");
+            w->appIconLabel->setPixmap(pix);
+        }
+        else {
+            pix = QPixmap("/usr/share/ukui-media/img/audio-high.png");
+            w->appIconLabel->setPixmap(pix);
+        }
+
 //        qDebug() << "滚动滑动条" << value << appVolumeLabelStr;
     });
     /*应用音量同步*/
@@ -684,7 +798,7 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
                      G_CALLBACK (update_app_volume),
                      w);
 
-    connect(w,&Widget::app_volume_changed,[=](bool is_mute,int volume,const gchar *app_name){
+    connect(w,&UkmediaControlCenterWidget::app_volume_changed,[=](bool is_mute,int volume,const gchar *app_name){
 //        qDebug() << "获取的应用音量及静音状态" << volume << is_mute << appLabelStr;
 
     //        w->appSlider->setValue(volume);
@@ -703,7 +817,7 @@ void Widget::add_app_to_tableview(Widget *w,int appnum, QStandardItemModel *stan
 /*
     应用音量滑动条滚动事件
 */
-void Widget::app_slider_changed_slot(int volume)
+void UkmediaControlCenterWidget::app_slider_changed_slot(int volume)
 {
 //    qDebug() << "滚动滑动条" << volume;
     mate_mixer_stream_control_set_volume;
@@ -724,7 +838,7 @@ void Widget::app_slider_changed_slot(int volume)
 /*
     同步应用音量
 */
-void Widget::update_app_volume(MateMixerStreamControl *control, GParamSpec *pspec, Widget *w)
+void UkmediaControlCenterWidget::update_app_volume(MateMixerStreamControl *control, GParamSpec *pspec, UkmediaControlCenterWidget *w)
 {
     Q_UNUSED(pspec);
 
@@ -738,6 +852,25 @@ void Widget::update_app_volume(MateMixerStreamControl *control, GParamSpec *pspe
     Q_EMIT w->app_volume_changed(is_mute,volume,app_name);
 //    qDebug() << "发送信号同步音量值" << is_mute <<volume ;
 
+    //设置声音标签图标
+    QPixmap pix;
+
+    if (volume <= 0) {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-mute.png");
+        w->appIconLabel->setPixmap(pix);
+    }
+    else if (volume > 0 && volume <= 33) {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-low.png");
+        w->appIconLabel->setPixmap(pix);
+    }
+    else if (volume >33 && volume <= 66) {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-medium.png");
+        w->appIconLabel->setPixmap(pix);
+    }
+    else {
+        pix = QPixmap("/usr/share/ukui-media/img/audio-high.png");
+        w->appIconLabel->setPixmap(pix);
+    }
     //静音可读并且处于静音
     if ((control_flags & MATE_MIXER_STREAM_CONTROL_MUTE_WRITABLE) ) {
     }
@@ -747,7 +880,7 @@ void Widget::update_app_volume(MateMixerStreamControl *control, GParamSpec *pspe
     }
 }
 
-void Widget::app_volume_changed_slot(bool is_mute,int volume,const gchar *app_name)
+void UkmediaControlCenterWidget::app_volume_changed_slot(bool is_mute,int volume,const gchar *app_name)
 {
 
 }
@@ -755,7 +888,7 @@ void Widget::app_volume_changed_slot(bool is_mute,int volume,const gchar *app_na
 /*
     连接context，处理不同信号
 */
-void Widget::set_context(Widget *w,MateMixerContext *context)
+void UkmediaControlCenterWidget::set_context(UkmediaControlCenterWidget *w,MateMixerContext *context)
 {
     g_signal_connect (G_OBJECT (context),
                       "stream-added",
@@ -799,7 +932,7 @@ void Widget::set_context(Widget *w,MateMixerContext *context)
 /*
     remove stream
 */
-void Widget::on_context_stream_removed (MateMixerContext *context,const gchar *name,Widget *w)
+void UkmediaControlCenterWidget::on_context_stream_removed (MateMixerContext *context,const gchar *name,UkmediaControlCenterWidget *w)
 {
 
 //        if (dialog->priv->hw_profile_combo != nullptr) {
@@ -819,7 +952,7 @@ void Widget::on_context_stream_removed (MateMixerContext *context,const gchar *n
 /*
     移除stream
 */
-void Widget::remove_stream (Widget *w, const gchar *name)
+void UkmediaControlCenterWidget::remove_stream (UkmediaControlCenterWidget *w, const gchar *name)
 {
 //        GtkWidget    *bar;
 //        GtkTreeIter   iter;
@@ -865,7 +998,7 @@ void Widget::remove_stream (Widget *w, const gchar *name)
 /*
     context 添加设备并设置到单选框
 */
-void Widget::on_context_device_added (MateMixerContext *context, const gchar *name, Widget *w)
+void UkmediaControlCenterWidget::on_context_device_added (MateMixerContext *context, const gchar *name, UkmediaControlCenterWidget *w)
 {
     MateMixerDevice *device;
     device = mate_mixer_context_get_device (context, name);
@@ -879,7 +1012,7 @@ void Widget::on_context_device_added (MateMixerContext *context, const gchar *na
 /*
     添加设备
 */
-void Widget::add_device (Widget *w, MateMixerDevice *device)
+void UkmediaControlCenterWidget::add_device (UkmediaControlCenterWidget *w, MateMixerDevice *device)
 {
 //        GtkTreeModel    *model;
 //        GtkTreeIter      iter;
@@ -904,7 +1037,7 @@ void Widget::add_device (Widget *w, MateMixerDevice *device)
 /*
     移除设备
 */
-void Widget::on_context_device_removed (MateMixerContext *context,const gchar *name,Widget *w)
+void UkmediaControlCenterWidget::on_context_device_removed (MateMixerContext *context,const gchar *name,UkmediaControlCenterWidget *w)
 {
     int  count = 0;
     MateMixerDevice *dev = mate_mixer_context_get_device(context,name);
@@ -934,7 +1067,7 @@ void Widget::on_context_device_removed (MateMixerContext *context,const gchar *n
 /*
     默认输入流通知
 */
-void Widget::on_context_default_input_stream_notify (MateMixerContext *context,GParamSpec *pspec,Widget *w)
+void UkmediaControlCenterWidget::on_context_default_input_stream_notify (MateMixerContext *context,GParamSpec *pspec,UkmediaControlCenterWidget *w)
 {
     MateMixerStream *stream;
 
@@ -944,7 +1077,7 @@ void Widget::on_context_default_input_stream_notify (MateMixerContext *context,G
     set_input_stream (w, stream);
 }
 
-void Widget::set_input_stream (Widget *w, MateMixerStream *stream)
+void UkmediaControlCenterWidget::set_input_stream (UkmediaControlCenterWidget *w, MateMixerStream *stream)
 {
 //        GtkTreeModel           *model;
     MateMixerSwitch        *swtch;
@@ -1020,7 +1153,7 @@ void Widget::set_input_stream (Widget *w, MateMixerStream *stream)
 /*
     control 静音通知
 */
-void Widget::on_stream_control_mute_notify (MateMixerStreamControl *control,GParamSpec *pspec,Widget *dialog)
+void UkmediaControlCenterWidget::on_stream_control_mute_notify (MateMixerStreamControl *control,GParamSpec *pspec,UkmediaControlCenterWidget *dialog)
 {
     /* Stop monitoring the input stream when it gets muted */
     if (mate_mixer_stream_control_get_mute (control) == TRUE)
@@ -1032,7 +1165,7 @@ void Widget::on_stream_control_mute_notify (MateMixerStreamControl *control,GPar
 /*
     默认输出流通知
 */
-void Widget::on_context_default_output_stream_notify (MateMixerContext *context,GParamSpec *pspec,Widget *w)
+void UkmediaControlCenterWidget::on_context_default_output_stream_notify (MateMixerContext *context,GParamSpec *pspec,UkmediaControlCenterWidget *w)
 {
     MateMixerStream *stream;
     qDebug() << "默认的输出stream改变";
@@ -1044,7 +1177,7 @@ void Widget::on_context_default_output_stream_notify (MateMixerContext *context,
 /*
     移除存储control
 */
-void Widget::on_context_stored_control_removed (MateMixerContext *context,const gchar *name,Widget *w)
+void UkmediaControlCenterWidget::on_context_stored_control_removed (MateMixerContext *context,const gchar *name,UkmediaControlCenterWidget *w)
 {
 //        GtkWidget *bar;
 
@@ -1064,7 +1197,7 @@ void Widget::on_context_stored_control_removed (MateMixerContext *context,const 
 /*
  * context设置属性
 */
-void Widget::context_set_property(Widget *w)//,guint prop_id,const GValue *value,GParamSpec *pspec)
+void UkmediaControlCenterWidget::context_set_property(UkmediaControlCenterWidget *w)//,guint prop_id,const GValue *value,GParamSpec *pspec)
 {
 //    Widget *self = GVC_MIXER_DIALOG (object);
 //    mate_mixer_context_set_backend_type(w->context,MATE_MIXER_BACKEND_PULSEAUDIO);
@@ -1084,7 +1217,7 @@ void Widget::context_set_property(Widget *w)//,guint prop_id,const GValue *value
 /*
     输出音量控制
 */
-void Widget::output_volume_slider_changed_slot(int volume)
+void UkmediaControlCenterWidget::output_volume_slider_changed_slot(int volume)
 {
 
 //    stream = mate_mixer_context_get_stream(context)
@@ -1097,7 +1230,7 @@ void Widget::output_volume_slider_changed_slot(int volume)
 /*
     输入音量控制
 */
-void Widget::input_volume_slider_changed_slot(int volume)
+void UkmediaControlCenterWidget::input_volume_slider_changed_slot(int volume)
 {
     QString percent = QString::number(volume);
     percent.append("%");
@@ -1107,7 +1240,7 @@ void Widget::input_volume_slider_changed_slot(int volume)
 /*
     更新输入音量及图标
 */
-void Widget::update_icon_input (Widget *w)
+void UkmediaControlCenterWidget::update_icon_input (UkmediaControlCenterWidget *w)
 {
     MateMixerStream        *stream;
     MateMixerStreamControl *control = nullptr;
@@ -1231,7 +1364,7 @@ void Widget::update_icon_input (Widget *w)
 /*
     更新输出音量及图标
 */
-void Widget::update_icon_output (Widget *w)
+void UkmediaControlCenterWidget::update_icon_output (UkmediaControlCenterWidget *w)
 {
     MateMixerStream        *stream;
     MateMixerStreamControl *control = nullptr;
@@ -1306,7 +1439,7 @@ void Widget::update_icon_output (Widget *w)
     }
 }
 
-void Widget::gvc_stream_status_icon_set_control (Widget *w,MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::gvc_stream_status_icon_set_control (UkmediaControlCenterWidget *w,MateMixerStreamControl *control)
 {
 //        g_return_if_fail (GVC_STREAM_STATUS_ICON (icon));
 
@@ -1360,7 +1493,7 @@ void Widget::gvc_stream_status_icon_set_control (Widget *w,MateMixerStreamContro
 /*
     stream control 声音通知
 */
-void Widget::on_stream_control_volume_notify (MateMixerStreamControl *control,GParamSpec *pspec,Widget *w)
+void UkmediaControlCenterWidget::on_stream_control_volume_notify (MateMixerStreamControl *control,GParamSpec *pspec,UkmediaControlCenterWidget *w)
 {
     MateMixerStreamControlFlags flags;
     gboolean muted = FALSE;
@@ -1409,7 +1542,7 @@ void Widget::on_stream_control_volume_notify (MateMixerStreamControl *control,GP
 /*
     设置平衡属性
 */
-void Widget::gvc_balance_bar_set_property (Widget *w,MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::gvc_balance_bar_set_property (UkmediaControlCenterWidget *w,MateMixerStreamControl *control)
 {
 //        GvcBalanceBar *self = GVC_BALANCE_BAR (object);
     gvc_balance_bar_set_control(w,control);
@@ -1421,7 +1554,7 @@ void Widget::gvc_balance_bar_set_property (Widget *w,MateMixerStreamControl *con
 /*
     平衡设置control
 */
-void Widget::gvc_balance_bar_set_control (Widget *w, MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::gvc_balance_bar_set_control (UkmediaControlCenterWidget *w, MateMixerStreamControl *control)
 {
 //        if (bar->priv->btype == BALANCE_TYPE_LFE) {
     gdouble minimum;
@@ -1483,62 +1616,15 @@ void Widget::gvc_balance_bar_set_control (Widget *w, MateMixerStreamControl *con
 /*
     设置平衡类型
 */
-void Widget::gvc_balance_bar_set_balance_type (Widget *w, MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::gvc_balance_bar_set_balance_type (UkmediaControlCenterWidget *w, MateMixerStreamControl *control)
 {
-//        GtkWidget     *frame;
-//        GtkAdjustment *adjustment;
 
-        /* Create adjustment with limits for balance and fade types because
-         * some limits must be provided.
-         * If subwoofer type is used instead, the limits will be changed when
-         * stream is set. */
-//        adjustment = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, -1.0, 1.0, 0.05, 0.5, 0.0));
-
-//        bar->priv->btype = btype;
-//        bar->priv->adjustment = GTK_ADJUSTMENT (g_object_ref_sink (adjustment));
-
-//        g_signal_connect (G_OBJECT (adjustment),
-//                          "value-changed",
-//                          G_CALLBACK (on_adjustment_value_changed),
-//                          bar);
-
-//        switch (btype) {
-//        case BALANCE_TYPE_RL:
-//                bar->priv->label = gtk_label_new_with_mnemonic (_("_Balance:"));
-//                break;
-//        case BALANCE_TYPE_FR:
-//                bar->priv->label = gtk_label_new_with_mnemonic (_("_Fade:"));
-//                break;
-//        case BALANCE_TYPE_LFE:
-//                bar->priv->label = gtk_label_new_with_mnemonic (_("_Subwoofer:"));
-//                break;
-//        }
-
-//        gtk_label_set_xalign (GTK_LABEL (bar->priv->label), 0.0);
-//        gtk_label_set_yalign (GTK_LABEL (bar->priv->label), 0.0);
-
-//        /* Frame */
-//        frame = gtk_frame_new (NULL);
-//        gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_NONE);
-//        gtk_box_pack_start (GTK_BOX (bar), frame, TRUE, TRUE, 0);
-
-//        /* Box with scale */
-//        create_scale_box (bar);
-//        gtk_container_add (GTK_CONTAINER (frame), bar->priv->scale_box);
-
-//        gtk_label_set_mnemonic_widget (GTK_LABEL (bar->priv->label),
-//                                       bar->priv->scale);
-
-//        gtk_widget_set_direction (bar->priv->scale, GTK_TEXT_DIR_LTR);
-//        gtk_widget_show_all (frame);
-
-//        g_object_notify_by_pspec (G_OBJECT (bar), properties[PROP_BALANCE_TYPE]);
 }
 
 /*
     平衡值改变
 */
-void Widget::on_balance_value_changed (MateMixerStreamControl *control,GParamSpec *pspec,Widget *w)
+void UkmediaControlCenterWidget::on_balance_value_changed (MateMixerStreamControl *control,GParamSpec *pspec,UkmediaControlCenterWidget *w)
 {
 //        update_balance_value (w);
     gdouble value = mate_mixer_stream_control_get_balance(control);
@@ -1549,7 +1635,7 @@ void Widget::on_balance_value_changed (MateMixerStreamControl *control,GParamSpe
 /*
     更新输出设置
 */
-void Widget::update_output_settings (Widget *w,MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::update_output_settings (UkmediaControlCenterWidget *w,MateMixerStreamControl *control)
 {
     MateMixerStreamControlFlags flags;
     flags = mate_mixer_stream_control_get_flags(control);
@@ -1566,7 +1652,7 @@ void Widget::update_output_settings (Widget *w,MateMixerStreamControl *control)
     });
 }
 
-void Widget::on_key_changed (GSettings *settings,gchar *key,Widget *w)
+void UkmediaControlCenterWidget::on_key_changed (GSettings *settings,gchar *key,UkmediaControlCenterWidget *w)
 {
     if (!strcmp (key, EVENT_SOUNDS_KEY) ||
         !strcmp (key, SOUND_THEME_KEY) ||
@@ -1580,7 +1666,7 @@ void Widget::on_key_changed (GSettings *settings,gchar *key,Widget *w)
 /*
     更新主题
 */
-void Widget::update_theme (Widget *w)
+void UkmediaControlCenterWidget::update_theme (UkmediaControlCenterWidget *w)
 {
     char        *theme_name;
     gboolean     events_enabled;
@@ -1609,7 +1695,7 @@ void Widget::update_theme (Widget *w)
 /*
     设置主题名到combox
 */
-void Widget::setup_theme_selector (Widget *w)
+void UkmediaControlCenterWidget::setup_theme_selector (UkmediaControlCenterWidget *w)
 {
     GHashTable           *hash;
     const char * const   *data_dirs;
@@ -1657,7 +1743,7 @@ void Widget::setup_theme_selector (Widget *w)
 /*
     主题名所在目录
 */
-void Widget::sound_theme_in_dir (Widget *w,GHashTable *hash,const char *dir)
+void UkmediaControlCenterWidget::sound_theme_in_dir (UkmediaControlCenterWidget *w,GHashTable *hash,const char *dir)
 {
     GDir *d;
     const char *name;
@@ -1700,7 +1786,7 @@ void Widget::sound_theme_in_dir (Widget *w,GHashTable *hash,const char *dir)
 /*
     加载下标的主题名
 */
-char *Widget::load_index_theme_name (const char *index,char **parent)
+char *UkmediaControlCenterWidget::load_index_theme_name (const char *index,char **parent)
 {
     GKeyFile *file;
     char *indexname = NULL;
@@ -1736,7 +1822,7 @@ char *Widget::load_index_theme_name (const char *index,char **parent)
 /*
     设置combox的主题名
 */
-void Widget::set_combox_for_theme_name (Widget *w,const char *name)
+void UkmediaControlCenterWidget::set_combox_for_theme_name (UkmediaControlCenterWidget *w,const char *name)
 {
 
     gboolean      found;
@@ -1781,7 +1867,7 @@ void Widget::set_combox_for_theme_name (Widget *w,const char *name)
 /*
     更新报警音
 */
-void Widget::update_alerts_from_theme_name (Widget *w,const gchar *name)
+void UkmediaControlCenterWidget::update_alerts_from_theme_name (UkmediaControlCenterWidget *w,const gchar *name)
 {
     if (strcmp (name, CUSTOM_THEME_NAME) != 0) {
             /* reset alert to default */
@@ -1802,7 +1888,7 @@ void Widget::update_alerts_from_theme_name (Widget *w,const gchar *name)
 /*
     更新报警声音
 */
-void Widget::update_alert (Widget *w,const char *alert_id)
+void UkmediaControlCenterWidget::update_alert (UkmediaControlCenterWidget *w,const char *alert_id)
 {
     QString theme;
     char *parent;
@@ -1880,7 +1966,7 @@ void Widget::update_alert (Widget *w,const char *alert_id)
 /*
     获取声音文件类型
 */
-int Widget::get_file_type (const char *sound_name,char **linked_name)
+int UkmediaControlCenterWidget::get_file_type (const char *sound_name,char **linked_name)
 {
     char *name, *filename;
     *linked_name = NULL;
@@ -1914,7 +2000,7 @@ int Widget::get_file_type (const char *sound_name,char **linked_name)
 /*
     自定义主题路径
 */
-char *Widget::custom_theme_dir_path (const char *child)
+char *UkmediaControlCenterWidget::custom_theme_dir_path (const char *child)
 {
     static char *dir = NULL;
     const char *data_dir;
@@ -1932,7 +2018,7 @@ char *Widget::custom_theme_dir_path (const char *child)
 /*
     获取报警声音文件的路径
 */
-void Widget::populate_model_from_dir (Widget *w,const char *dirname)//从目录查找报警声音文件
+void UkmediaControlCenterWidget::populate_model_from_dir (UkmediaControlCenterWidget *w,const char *dirname)//从目录查找报警声音文件
 {
     GDir       *d;
     const char *name;
@@ -1959,7 +2045,7 @@ void Widget::populate_model_from_dir (Widget *w,const char *dirname)//从目录�
 /*
     获取报警声音文件
 */
-void Widget::populate_model_from_file (Widget *w,const char *filename)
+void UkmediaControlCenterWidget::populate_model_from_file (UkmediaControlCenterWidget *w,const char *filename)
 {
     xmlDocPtr  doc;
     xmlNodePtr root;
@@ -1995,7 +2081,7 @@ void Widget::populate_model_from_file (Widget *w,const char *filename)
 /*
     从节点查找声音文件并加载到组合框中
 */
-void Widget::populate_model_from_node (Widget *w,xmlNodePtr node)
+void UkmediaControlCenterWidget::populate_model_from_node (UkmediaControlCenterWidget *w,xmlNodePtr node)
 {
     xmlNodePtr child;
     xmlChar   *filename;
@@ -2029,7 +2115,7 @@ void Widget::populate_model_from_node (Widget *w,xmlNodePtr node)
 }
 
 /* Adapted from yelp-toc-pager.c */
-xmlChar *Widget::xml_get_and_trim_names (xmlNodePtr node)
+xmlChar *UkmediaControlCenterWidget::xml_get_and_trim_names (xmlNodePtr node)
 {
     xmlNodePtr cur;
     xmlChar *keep_lang = NULL;
@@ -2092,7 +2178,7 @@ xmlChar *Widget::xml_get_and_trim_names (xmlNodePtr node)
 /*
  * 播放报警声音
 */
-void Widget::play_alret_sound_from_path (QString path)
+void UkmediaControlCenterWidget::play_alret_sound_from_path (QString path)
 {
    QMediaPlayer *player = new QMediaPlayer;
 //   connect(w->player, SIGNAL(positionChanged(qint64)), w, SLOT(positionChanged(qint64)));
@@ -2104,7 +2190,7 @@ void Widget::play_alret_sound_from_path (QString path)
 /*
     点击combox播放声音
 */
-void Widget::combox_index_changed_slot(int index)
+void UkmediaControlCenterWidget::combox_index_changed_slot(int index)
 {
     QString sound_name = soundlist->at(index);
     qDebug() << sound_name;
@@ -2114,7 +2200,7 @@ void Widget::combox_index_changed_slot(int index)
 /*
     点击声音主题实现主题切换
 */
-void Widget::theme_combox_index_changed_slot(int index)
+void UkmediaControlCenterWidget::theme_combox_index_changed_slot(int index)
 {
     qDebug() << "声音主题改变" << theme_display_name_list->at(index);
     //设置系统主题
@@ -2123,7 +2209,7 @@ void Widget::theme_combox_index_changed_slot(int index)
 /*
     点击输出设备combox切换设备
 */
-void Widget::output_device_combox_index_changed_slot(int index)
+void UkmediaControlCenterWidget::output_device_combox_index_changed_slot(int index)
 {
     qDebug() << "输出组合框index改变" << index  << output_stream_list->at(0);
     MateMixerBackendFlags flags;
@@ -2147,7 +2233,7 @@ void Widget::output_device_combox_index_changed_slot(int index)
 /*
     点击输出设备combox切换
 */
-void Widget::input_device_combox_index_changed_slot(int index)
+void UkmediaControlCenterWidget::input_device_combox_index_changed_slot(int index)
 {
     MateMixerBackendFlags flags;
     QString name = input_stream_list->at(index);
@@ -2167,7 +2253,7 @@ void Widget::input_device_combox_index_changed_slot(int index)
         set_input_stream (this, stream);
 }
 
-void Widget::set_output_stream (Widget *w, MateMixerStream *stream)
+void UkmediaControlCenterWidget::set_output_stream (UkmediaControlCenterWidget *w, MateMixerStream *stream)
 {
         MateMixerSwitch        *swtch;
         MateMixerStreamControl *control;
@@ -2220,7 +2306,7 @@ void Widget::set_output_stream (Widget *w, MateMixerStream *stream)
 /*
     更新输出stream 列表
 */
-void Widget::update_output_stream_list(Widget *w,MateMixerStream *stream)
+void UkmediaControlCenterWidget::update_output_stream_list(UkmediaControlCenterWidget *w,MateMixerStream *stream)
 {
     const gchar *name = NULL;
     if (stream != nullptr) {
@@ -2233,7 +2319,7 @@ void Widget::update_output_stream_list(Widget *w,MateMixerStream *stream)
 /*
     bar设置stream
 */
-void Widget::bar_set_stream (Widget  *w,MateMixerStream *stream)
+void UkmediaControlCenterWidget::bar_set_stream (UkmediaControlCenterWidget  *w,MateMixerStream *stream)
 {
         MateMixerStreamControl *control = NULL;
 
@@ -2243,7 +2329,7 @@ void Widget::bar_set_stream (Widget  *w,MateMixerStream *stream)
         bar_set_stream_control (w, control);
 }
 
-void Widget::bar_set_stream_control (Widget *w,MateMixerStreamControl *control)
+void UkmediaControlCenterWidget::bar_set_stream_control (UkmediaControlCenterWidget *w,MateMixerStreamControl *control)
 {
         const gchar *name;
         MateMixerStreamControl *previous;
@@ -2299,7 +2385,7 @@ AudioSlider::~AudioSlider()
 
 }
 
-Widget::~Widget()
+UkmediaControlCenterWidget::~UkmediaControlCenterWidget()
 {
     delete ui;
 }
