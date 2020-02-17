@@ -8,7 +8,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = audio
+TARGET = ukui-volume-control-qt
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -34,12 +34,14 @@ PKGCONFIG += libmatemixer \
 SOURCES += \
         main.cpp \
         utils.cpp \
-    ukmedia_control_center_widget.cpp
+        ukmedia_control_center_widget.cpp \
+#    ukmediaoutputsettings.cpp
 #    appvolume.cpp
 
 HEADERS += \
         utils.h \
-        ukmedia_control_center_widget.h
+        ukmedia_control_center_widget.h \
+#    ukmediaoutputsettings.h
 #    appvolume.h
 
 FORMS += \

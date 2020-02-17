@@ -34,6 +34,8 @@ extern "C" {
 #include <QStringList>
 #include <QSpacerItem>
 #include <QListView>
+#include <QScrollBar>
+
 #define MATE_DESKTOP_USE_UNSTABLE_API
 #define VERSION "1.12.1"
 #define GVC_DIALOG_DBUS_NAME "org.mate.VolumeControl"
@@ -57,6 +59,7 @@ enum {
     SOUND_TYPE_BUILTIN,
     SOUND_TYPE_CUSTOM
 };
+
 
 UkmediaControlCenterWidget::UkmediaControlCenterWidget(QWidget *parent) :
     QWidget(parent),
@@ -154,7 +157,9 @@ UkmediaControlCenterWidget::UkmediaControlCenterWidget(QWidget *parent) :
     connect(this->ui->shutdownCombobox,SIGNAL(currentIndexChanged(int)),this,SLOT(combox_index_changed_slot(int)));
     connect(this->ui->lagoutCombobox ,SIGNAL(currentIndexChanged(int)),this,SLOT(combox_index_changed_slot(int)));
     connect(this->ui->soundThemeCombobox,SIGNAL(currentIndexChanged(int)),this,SLOT(theme_combox_index_changed_slot(int)));
-
+    connect(this->ui->inputLevelSlider,SIGNAL(valueChanged(int)),this,SLOT(input_level_value_changed_slot()));
+    //输入等级
+    input_level_set_property(this);
     //设置样式
     ui->outputDeviceCombobox->setStyleSheet("QComboBox {width:140px;height:30px;background:rgba(248,248,248,1);"
                                             "border:2px solid rgba(218, 227, 250, 1);border-radius:4px;}"
@@ -192,7 +197,16 @@ UkmediaControlCenterWidget::UkmediaControlCenterWidget(QWidget *parent) :
     ui->soundThemeCombobox->setView(new QListView());
     ui->shutdownCombobox->setView(new QListView());
     ui->lagoutCombobox->setView(new QListView());
-    setWindowFlags(Qt::ToolTip);
+//    setWindowFlags(Qt::ToolTip);
+
+    //设置QTableView每行的宽度
+    ui->appVolumeTableView->setColumnWidth(0,56);
+    ui->appVolumeTableView->setColumnWidth(1,88);
+    ui->appVolumeTableView->setColumnWidth(2,40);
+    ui->appVolumeTableView->setColumnWidth(3,180);
+    ui->appVolumeTableView->setColumnWidth(4,40);
+
+    //add QScrollArea
 
 }
 
@@ -205,6 +219,8 @@ void UkmediaControlCenterWidget::on_context_state_notify (MateMixerContext *cont
     list_device(w,context);
     if (state == MATE_MIXER_STATE_READY) {
 
+//        update_default_output_stream (applet);
+        update_default_input_stream (w);
         update_icon_output(w);
         update_icon_input(w);
 //                remove_warning_dialog ();
@@ -386,8 +402,8 @@ void UkmediaControlCenterWidget::add_stream (UkmediaControlCenterWidget *w, Mate
 
         if (stream == input) {
             bar_set_stream (w, stream);
-
-//                        update_input_settings (dialog);
+            MateMixerStreamControl *c = mate_mixer_stream_get_default_control(stream);
+            update_input_settings (w,c);
             is_default = TRUE;
         }
 //                model = gtk_tree_view_get_model (GTK_TREE_VIEW (dialog->priv->input_treeview));
@@ -428,22 +444,6 @@ void UkmediaControlCenterWidget::add_stream (UkmediaControlCenterWidget *w, Mate
         controls = controls->next;
     }
 
-//        if (/*model != nullptr*/ 1) {
-//                const gchar *name;
-//                const gchar *label;
-
-//                name  = mate_mixer_stream_get_name (stream);
-//                label = mate_mixer_stream_get_label (stream);
-//            qDebug() << "++++++++" << name << label;
-//                gtk_list_store_append (GTK_LIST_STORE (model), &iter);
-//                gtk_list_store_set (GTK_LIST_STORE (model),
-//                                    &iter,
-//                                    NAME_COLUMN, name,
-//                                    LABEL_COLUMN, label,
-//                                    ACTIVE_COLUMN, is_default,
-//                                    SPEAKERS_COLUMN, speakers,
-//                                    -1);
-//        }
     // XXX find a way to disconnect when removed
     g_signal_connect (G_OBJECT (stream),
                       "control-added",
@@ -580,7 +580,7 @@ void UkmediaControlCenterWidget::on_stream_control_removed (MateMixerStream *str
 {
     MateMixerStreamControl *control;
     qDebug() << "stream control remove" << name;
-    w->stream_control_list->append(name);
+     int i = w->stream_control_list->indexOf(name);
 //        control = gvc_channel_bar_get_control (GVC_CHANNEL_BAR (dialog->priv->input_bar));
 //    if (control != nullptr) {
 //        const gchar *input_name = mate_mixer_stream_control_get_name (control);
@@ -623,14 +623,15 @@ void UkmediaControlCenterWidget::remove_application_control (UkmediaControlCente
     int index = w->app_volume_list->indexOf(name);
     int i = w->stream_control_list->indexOf(name);
 
-    w->stream_control_list->removeOne(name);
+    w->stream_control_list->removeAt(i);
+    qDebug() << "xiabiaowei" << i << "double " << w->stream_control_list->indexOf(name) << "size" << w->stream_control_list->size();
 
 //    MateMixerStream *s =  mate_mixer_stream_control_get_stream(control);
 //    MateMixerAppInfo *info = mate_mixer_stream_control_get_app_info(control);
 //    const gchar *app_name = mate_mixer_app_info_get_name(info);
-    qDebug() << "移除stream control" << i << "移除应用app_name  name"  << name << index << w->stream_control_list->size() ;
+//    qDebug() << "移除stream control" << i << "移除应用app_name  name"  << name << index << w->stream_control_list->size() ;
 //    w->app_volume_list->removeAt(index);
-    w->standItemModel->removeRows(0,1);
+    w->standItemModel->removeRow(i);
 
     if (appnum <= 0) {
         g_warn_if_reached ();
@@ -646,7 +647,7 @@ void UkmediaControlCenterWidget::remove_application_control (UkmediaControlCente
 
 void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget *w,int appnum, QStandardItemModel *standItemModel,const gchar *app_name,QString app_icon_name,MateMixerStreamControl *control)
 {
-    //设置QTableView每行的宽度
+//    //设置QTableView每行的宽度
     w->ui->appVolumeTableView->setColumnWidth(0,56);
     w->ui->appVolumeTableView->setColumnWidth(1,88);
     w->ui->appVolumeTableView->setColumnWidth(2,40);
@@ -692,40 +693,41 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
     w->appSlider = new AudioSlider(app_widget);
     w->appSlider->setOrientation(Qt::Horizontal);
 
+
+//    QSpacerItem *item1 = new QSpacerItem(16,20);
+//    QSpacerItem *item2 = new QSpacerItem(8,20);
+//    QSpacerItem *item3 = new QSpacerItem(16,20);
+//    QSpacerItem *item4 = new QSpacerItem(16,20);
+//    QSpacerItem *item5 = new QSpacerItem(16,20);
+//    QSpacerItem *item6 = new QSpacerItem(16,20);
+//    hlayout->addItem(item1);
+//    hlayout->addWidget(w->appIconBtn);
+//    hlayout->addItem(item2);
+//    hlayout->addWidget(w->appLabel);
+//    hlayout->addItem(item3);
+//    hlayout->addWidget(w->appIconLabel);
+//    hlayout->addItem(item4);
+//    hlayout->addWidget(w->appSlider);
+//    hlayout->addItem(item5);
+//    hlayout->addWidget(w->appVolumeLabel);
+//    hlayout->addItem(item6);
+//    app_widget->setLayout(hlayout);
+//    app_widget->layout()->setSpacing(0);
+//    app_widget->move(0,742+(appnum-1)*50);
+//    app_widget->show();
+
+    w->appLabel = new QLabel(w->ui->appVolumeTableView);
+    w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
+    w->appIconLabel = new QLabel(w->ui->appVolumeTableView);
+    w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
+    w->appSlider = new AudioSlider(w->ui->appVolumeTableView);
+    w->appSlider->setOrientation(Qt::Horizontal);
+
     //设置每项的固定大小
     w->appLabel->setFixedSize(88,14);
     w->appIconBtn->setFixedSize(32,32);
     w->appIconLabel->setFixedSize(24,24);
     w->appVolumeLabel->setFixedSize(36,14);
-
-    QSpacerItem *item1 = new QSpacerItem(16,20);
-    QSpacerItem *item2 = new QSpacerItem(8,20);
-    QSpacerItem *item3 = new QSpacerItem(16,20);
-    QSpacerItem *item4 = new QSpacerItem(16,20);
-    QSpacerItem *item5 = new QSpacerItem(16,20);
-    QSpacerItem *item6 = new QSpacerItem(16,20);
-    hlayout->addItem(item1);
-    hlayout->addWidget(w->appIconBtn);
-    hlayout->addItem(item2);
-    hlayout->addWidget(w->appLabel);
-    hlayout->addItem(item3);
-    hlayout->addWidget(w->appIconLabel);
-    hlayout->addItem(item4);
-    hlayout->addWidget(w->appSlider);
-    hlayout->addItem(item5);
-    hlayout->addWidget(w->appVolumeLabel);
-    hlayout->addItem(item6);
-    app_widget->setLayout(hlayout);
-    app_widget->layout()->setSpacing(0);
-    app_widget->move(0,742+(appnum-1)*50);
-    app_widget->show();
-
-//    w->appLabel = new QLabel(w->ui->appVolumeTableView);
-//    w->appIconBtn = new QPushButton(w->ui->appVolumeTableView);
-//    w->appIconLabel = new QLabel(w->ui->appVolumeTableView);
-//    w->appVolumeLabel = new QLabel(w->ui->appVolumeTableView);
-//    w->appSlider = new AudioSlider(w->ui->appVolumeTableView);
-    w->appSlider->setOrientation(Qt::Horizontal);
 
     QSize icon_size(32,32);
     w->appIconBtn->setIconSize(icon_size);
@@ -738,11 +740,11 @@ void UkmediaControlCenterWidget::add_app_to_tableview(UkmediaControlCenterWidget
     w->appSlider->setMaximum(100);
     w->appSlider->setMinimumSize(178,20);
     w->appSlider->setMaximumSize(800,20);
-//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appIconBtn);
-//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appLabel);
-//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appIconLabel);
-//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appSlider);
-//    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,4),w->appVolumeLabel);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,0),w->appIconBtn);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,1),w->appLabel);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,2),w->appIconLabel);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,3),w->appSlider);
+    w->ui->appVolumeTableView->setIndexWidget(standItemModel->index(appnum-1,4),w->appVolumeLabel);
 
     QString appSliderStr = app_name;
     QString appLabelStr = app_name;
@@ -1100,7 +1102,7 @@ void UkmediaControlCenterWidget::set_input_stream (UkmediaControlCenterWidget *w
 {
 //        GtkTreeModel           *model;
     MateMixerSwitch        *swtch;
-    MateMixerStreamControl *control;
+    MateMixerStreamControl *control = mate_mixer_stream_get_default_control(stream);
 
 //        control = gvc_channel_bar_get_control (GVC_CHANNEL_BAR (dialog->priv->input_bar));
     if (control != nullptr) {
@@ -1118,7 +1120,7 @@ void UkmediaControlCenterWidget::set_input_stream (UkmediaControlCenterWidget *w
 //                                                      G_CALLBACK (on_stream_control_monitor_value),
 //                                                      dialog);
 
-        mate_mixer_stream_control_set_monitor_enabled (control, FALSE);
+            mate_mixer_stream_control_set_monitor_enabled (control, FALSE);
     }
 
     bar_set_stream (w, stream);
@@ -1162,11 +1164,12 @@ void UkmediaControlCenterWidget::set_input_stream (UkmediaControlCenterWidget *w
                           G_CALLBACK (on_stream_control_mute_notify),
                           w);
     }
+    control = mate_mixer_stream_get_default_control(stream);
+    if (G_LIKELY (control != NULL))
+        mate_mixer_stream_control_set_monitor_enabled (control, TRUE);
 
-//        model = gtk_tree_view_get_model (GTK_TREE_VIEW (dialog->priv->input_treeview));
-//        update_default_tree_item (dialog, model, stream);
-
-//        update_input_settings (dialog);
+    MateMixerStreamControl *c = mate_mixer_stream_get_default_control(stream);
+    update_input_settings (w,c);
 }
 
 /*
@@ -1263,6 +1266,7 @@ void UkmediaControlCenterWidget::update_icon_input (UkmediaControlCenterWidget *
 {
     MateMixerStream        *stream;
     MateMixerStreamControl *control = nullptr;
+    MateMixerStreamControlFlags flags;
     const gchar *app_id;
     gboolean show = FALSE;
 
@@ -1378,12 +1382,29 @@ void UkmediaControlCenterWidget::update_icon_input (UkmediaControlCenterWidget *
 //                gtk_status_icon_set_visible (GTK_STATUS_ICON (applet->priv->icon_output),
 //                                             FALSE);
         }
+        //开始监听输入等级
+        if (show == TRUE) {
+            flags = mate_mixer_stream_control_get_flags(control);
+            mate_mixer_stream_control_set_monitor_enabled(control,true);
+            /* Enable level bar only if supported by the control */
+            if (flags & MATE_MIXER_STREAM_CONTROL_HAS_MONITOR) {
+                g_signal_connect (G_OBJECT (control),
+                                  "monitor-value",
+                                  G_CALLBACK (on_stream_control_monitor_value),
+                                  w);
+                qDebug() << "获取输入等级和麦克风音量";
+            }
+        }
+        else if(show == FALSE) {
+            mate_mixer_stream_control_set_monitor_enabled(control,false);
+            qDebug() << "获取失败";
+        }
 }
 
 /*
     更新输出音量及图标
 */
-void UkmediaControlCenterWidget::update_icon_output (UkmediaControlCenterWidget *w)
+void UkmediaControlCenterWidget::update_icon_output(UkmediaControlCenterWidget *w)
 {
     MateMixerStream        *stream;
     MateMixerStreamControl *control = nullptr;
@@ -2404,6 +2425,228 @@ AudioSlider::~AudioSlider()
 
 }
 
+void UkmediaControlCenterWidget::input_level_set_property (UkmediaControlCenterWidget *w)
+{
+//    Q_UNUSED(pspec);
+    scale = GVC_LEVEL_SCALE_LINEAR;
+    input_level_set_scale (w, w->scale);
+}
+
+void UkmediaControlCenterWidget::input_level_set_scale (UkmediaControlCenterWidget *w, LevelScale scale)
+{
+//        g_return_if_fail (GVC_IS_LEVEL_BAR (bar));
+
+        if (scale != w->scale) {
+//                if (G_UNLIKELY (scale != GVC_LEVEL_SCALE_LINEAR &&
+//                                scale != GVC_LEVEL_SCALE_LOG)) {
+//                        g_warn_if_reached ();
+//                        return;
+//                }
+//                bar->priv->scale = scale;
+
+                update_peak_value (w);
+                update_rms_value (w);
+
+//                g_object_notify_by_pspec (G_OBJECT (bar), properties[PROP_SCALE]);
+        }
+}
+
+void UkmediaControlCenterWidget::update_peak_value (UkmediaControlCenterWidget *w)
+{
+        gdouble value = fraction_from_adjustment(w);
+        qDebug() << "updatepeak value" << value << endl;
+
+        w->peak_fraction = value;
+
+        if (value > w->max_peak) {
+                if (w->max_peak_id > 0)
+                        g_source_remove (w->max_peak_id);
+
+//                w->max_peak_id =
+//                        g_timeout_add_seconds (1, (GSourceFunc) reset_max_peak, bar);
+                w->max_peak = value;
+        }
+//        bar_calc_layout (bar);
+
+//        if (layout_changed (&bar->priv->layout, &layout))
+//                gtk_widget_queue_draw (GTK_WIDGET (bar));
+}
+
+void UkmediaControlCenterWidget::update_rms_value (UkmediaControlCenterWidget *w)
+{
+    qDebug() << "update rms value";
+//        w->rms_fraction = fraction_from_adjustment (bar, bar->priv->rms_adjustment);
+}
+
+void UkmediaControlCenterWidget::input_level_value_changed_slot()
+{
+    qDebug() << "输入等级更改" << endl;
+    update_peak_value(this);
+}
+
+gdouble UkmediaControlCenterWidget::fraction_from_adjustment (UkmediaControlCenterWidget   *w)
+{
+        gdouble level;
+        gdouble fraction = 0.0;
+        gdouble min;
+        gdouble max;
+
+        level = w->ui->inputLevelSlider->value();
+        min   = w->ui->inputLevelSlider->minimum();
+        max   = w->ui->inputLevelSlider->maximum();
+
+        switch (w->scale) {
+        case GVC_LEVEL_SCALE_LINEAR:
+                fraction = (level - min) / (max - min);
+                break;
+        case GVC_LEVEL_SCALE_LOG:
+                fraction = log10 ((level - min + 1) / (max - min + 1));
+                break;
+        }
+        printf("level = %f , min = %f ,max = %f fraction = %f\n",level,min,max,fraction);
+        return fraction;
+}
+
+/*
+    更新输入设置w
+*/
+void UkmediaControlCenterWidget::update_input_settings (UkmediaControlCenterWidget *w,MateMixerStreamControl *control)
+{
+        MateMixerStream            *stream;
+        MateMixerStreamControlFlags flags;
+        MateMixerSwitch            *port_switch;
+
+        qDebug() << "------update input settings control" << mate_mixer_stream_control_get_name(control) << endl << endl << endl;
+        g_debug ("Updating input settings");
+
+        /* Get the control currently associated with the input slider */
+//        control = gvc_channel_bar_get_control (GVC_CHANNEL_BAR (dialog->priv->input_bar));
+        if (control == nullptr)
+                return;
+
+        flags = mate_mixer_stream_control_get_flags (control);
+
+        /* Enable level bar only if supported by the control */
+        if (flags & MATE_MIXER_STREAM_CONTROL_HAS_MONITOR) {
+//            g_signal_connect (G_OBJECT (control),
+//                              "monitor-value",
+//                              G_CALLBACK (on_stream_control_monitor_value),
+//                              w);
+            qDebug() << "MATE_MIXER_STREAM_CONTROL_HAS_MONITOR";
+        }
+
+        /* Get owning stream of the control */
+        stream = mate_mixer_stream_control_get_stream (control);
+        if (G_UNLIKELY (stream == NULL))
+                return;
+
+        /* Enable the port selector if the stream has one */
+//        port_switch = find_stream_port_switch (stream);
+//        if (port_switch != NULL) {
+//                dialog->priv->input_port_combo =
+//                        gvc_combo_box_new (port_switch, _("Co_nnector:"));
+
+//                gvc_combo_box_set_size_group (GVC_COMBO_BOX (dialog->priv->input_port_combo),
+//                                              dialog->priv->size_group,
+//                                              FALSE);
+
+//                gtk_box_pack_start (GTK_BOX (dialog->priv->input_settings_box),
+//                                    dialog->priv->input_port_combo,
+//                                    TRUE, TRUE, 0);
+
+//                gtk_widget_show (dialog->priv->input_port_combo);
+//        }
+}
+
+void UkmediaControlCenterWidget::on_stream_control_monitor_value (MateMixerStream *stream,gdouble value,UkmediaControlCenterWidget  *w)
+{
+
+//        if (dialog->priv->last_input_peak >= DECAY_STEP) {
+//                if (value < dialog->priv->last_input_peak - DECAY_STEP) {
+//                        value = dialog->priv->last_input_peak - DECAY_STEP;
+//                        printf("456*************\n");
+//                }
+//        }
+
+//        dialog->priv->last_input_peak = value;
+        qDebug() << "461 监视control  input peak \n\n\n\n" <<  value;
+        value = value*100;
+//        adj = gvc_level_bar_get_peak_adjustment (GVC_LEVEL_BAR (dialog->priv->input_level_bar));
+        if (value >= 0)
+            w->ui->inputLevelSlider->setValue(value);
+//                gtk_adjustment_set_value (adj, value);
+        else
+                w->ui->inputLevelSlider->setValue(0);
+}
+
+/*
+    输入stream control add
+*/
+void UkmediaControlCenterWidget::on_input_stream_control_added (MateMixerStream *stream,const gchar *name,UkmediaControlCenterWidget *w)
+{
+        MateMixerStreamControl *control;
+        qDebug() << "control add";
+        control = mate_mixer_stream_get_control (stream, name);
+        if G_LIKELY (control != NULL) {
+                MateMixerStreamControlRole role =
+                        mate_mixer_stream_control_get_role (control);
+
+                /* Non-application input control doesn't affect the icon */
+                if (role != MATE_MIXER_STREAM_CONTROL_ROLE_APPLICATION)
+                        return;
+        }
+
+        /* Either an application control has been added or we couldn't
+         * read the control, this shouldn't happen but let's revalidate the
+         * icon to be sure if it does */
+        update_icon_input (w);
+}
+
+/*
+    输入stream control removed
+*/
+void UkmediaControlCenterWidget::on_input_stream_control_removed (MateMixerStream *stream,const gchar *name,UkmediaControlCenterWidget *w)
+{
+        /* The removed stream could be an application input, which may cause
+         * the input status icon to disappear */
+    qDebug() << "输入stream control removed";
+        update_icon_input (w);
+}
+
+
+/*
+    更新默认的输入stream
+*/
+gboolean UkmediaControlCenterWidget::update_default_input_stream (UkmediaControlCenterWidget *w)
+{
+        MateMixerStream *stream;
+        qDebug() << "更新默认的输入stream";
+        stream = mate_mixer_context_get_default_input_stream (w->context);
+//        if (stream == w->stream)
+//                return FALSE;
+
+        /* The input stream has changed */
+        if (w->input != NULL) {
+//                g_signal_handlers_disconnect_by_data (G_OBJECT (status_icon->priv->input),
+//                                                      status_icon);
+//                g_object_unref (status_icon->priv->input);
+        }
+
+        w->input = (stream == nullptr) ? nullptr : stream;
+        if (w->input != NULL) {
+            g_signal_connect (G_OBJECT (w->input),
+                              "control-added",
+                              G_CALLBACK (on_input_stream_control_added),
+                              w);
+            g_signal_connect (G_OBJECT (w->input),
+                              "control-removed",
+                              G_CALLBACK (on_input_stream_control_removed),
+                              w);
+        }
+
+        /* Return TRUE if the default input stream has changed */
+        return TRUE;
+}
 UkmediaControlCenterWidget::~UkmediaControlCenterWidget()
 {
     delete ui;

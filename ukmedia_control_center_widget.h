@@ -41,6 +41,14 @@ extern "C" {
 #define DEFAULT_ALERT_ID "__default"
 #define CUSTOM_THEME_NAME "__custom"
 #define NO_SOUNDS_THEME_NAME "__no_sounds"
+
+
+typedef enum
+{
+    GVC_LEVEL_SCALE_LINEAR,
+    GVC_LEVEL_SCALE_LOG
+} LevelScale;
+
 namespace Ui {
 class Widget;
 }
@@ -142,6 +150,20 @@ public:
 
     static void bar_set_stream (UkmediaControlCenterWidget *w,MateMixerStream *stream);
     static void bar_set_stream_control (UkmediaControlCenterWidget *w,MateMixerStreamControl *control);
+
+    static void update_input_settings (UkmediaControlCenterWidget *w,MateMixerStreamControl *control);
+    static void on_stream_control_monitor_value (MateMixerStream *stream,gdouble value,UkmediaControlCenterWidget *w);
+    void input_level_set_property (UkmediaControlCenterWidget *w);
+    void input_level_set_scale (UkmediaControlCenterWidget *w, LevelScale scale);
+    static void update_peak_value (UkmediaControlCenterWidget *w);
+    static void update_rms_value (UkmediaControlCenterWidget *w);
+
+    static gdouble fraction_from_adjustment (UkmediaControlCenterWidget   *w);
+
+    static void on_input_stream_control_added (MateMixerStream *stream,const gchar *name,UkmediaControlCenterWidget *w);
+    static void on_input_stream_control_removed (MateMixerStream *stream,const gchar *name,UkmediaControlCenterWidget *w);
+    static gboolean update_default_input_stream (UkmediaControlCenterWidget *w);
+
 Q_SIGNALS:
     void app_volume_changed(bool is_mute,int volume,const gchar *app_name);
 
@@ -154,11 +176,14 @@ private Q_SLOTS:
     void theme_combox_index_changed_slot(int index);
     void output_device_combox_index_changed_slot(int index);
     void input_device_combox_index_changed_slot(int index);
+    void input_level_value_changed_slot();
 
 private:
     MateMixerContext *context;
     MateMixerStream *stream;
-    MateMixerStream *control;
+    MateMixerStream *input;
+    MateMixerStream *output;
+    MateMixerStreamControl *control;
     QStandardItemModel *standItemModel ;
 
     QLabel *appLabel;
@@ -179,6 +204,13 @@ private:
 
     GSettings *sound_settings;
     QLabel *app_display_label;
+
+    LevelScale scale;
+    gdouble peak_fraction;
+    gdouble rms_fraction;
+    gdouble max_peak;
+
+    guint          max_peak_id;
     Ui::Widget *ui;
 };
 

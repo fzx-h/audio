@@ -23,7 +23,6 @@ QComboBox QAbstractItemView::item:hover {
     font-color: rgb(225, 0, 0);
 }
 
-
 QComboBox::drop-down:hover{
     background-color:#ff0000;
     border-radius:2px;
@@ -117,7 +116,6 @@ QLabel#applicationLabel{
     opacity:0.85;
 }
 
-
 /*滑动条slider*/
 QSlider{
     width: 178px;
@@ -147,7 +145,6 @@ QSlider::handle:horizontal {
     border-radius:10px;
 }
 
-
 QComboBox::down-arrow:hover{
 width:184px;
 height:30px;
@@ -157,6 +154,17 @@ border-radius:2px;
 }
 
 /*应用tableview*/
+QTableView {
+    background-color: rgba(244,244,244,1);
+    border-radius: 2px;
+    gridline-color: red;
+    padding: 4px 2px 4px 2px;
+}
 
-
-
+QTableView::item{
+    height: 40px;
+    padding-top: 10px;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-bottom: 10px;
+}
